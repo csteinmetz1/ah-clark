@@ -1,0 +1,23 @@
+﻿  stdafx.cpp
+  CameraControl.cpp
+c:\opencv\build\include\opencv2\flann\logger.h(66): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
+CameraControl.cpp(28): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+  PSEyeDemo.cpp
+c:\opencv\build\include\opencv2\flann\logger.h(66): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
+PSEyeDemo.cpp(177): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+PSEyeDemo.cpp(178): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+PSEyeDemo.cpp(179): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+PSEyeDemo.cpp(275): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+PSEyeDemo.cpp(293): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+PSEyeDemo.cpp(294): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+PSEyeDemo.cpp(306): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+  Generating code
+c:\users\dylan\desktop\seniordesign_software\ah-clark\vision\pseyedemo\cameracontrol.cpp(19): warning C4700: uninitialized local variable 'EyeCamera' used
+  378 of 383 functions (98.7%) were compiled, the rest were copied from previous compilation.
+    15 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  PSEyeDemo.vcxproj -> C:\Users\Dylan\Desktop\seniordesign_software\ah-clark\vision\Release\PSEyeDemo.exe
+  PSEyeDemo.vcxproj -> C:\Users\Dylan\Desktop\seniordesign_software\ah-clark\vision\Release\PSEyeDemo.pdb (Full PDB)
