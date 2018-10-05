@@ -4,7 +4,7 @@ import struct
 import numpy as np
 
 class TivaController:
-    def __init__(self, units_per_cm=1, arm1_cm=20, arm2_cm=10, x_offset_cm=0, y_offset_cm=0, bufsize=8):
+    def __init__(self, units_per_cm=1, arm1_cm=45, arm2_cm=15, x_offset_cm=0, y_offset_cm=0, bufsize=8):
         # Arm properties
         self.units_per_cm = units_per_cm
 
@@ -17,7 +17,10 @@ class TivaController:
         # Arm initialization
         self.q1 = 0.0
         self.q2 = 0.0
-        self.find_arm_locations()
+        self.x1 = 0.0
+        self.y1 = 0.0
+        self.x2 = 0.0
+        self.y2 = 0.0
 
         # UDF configuration
         self.bufsize = bufsize
@@ -48,28 +51,39 @@ class TivaController:
             print('REQUEST TIMED OUT')
 
     def move_arm(self, x, y):
-        self.q1, self.q2 = self.compute_kinematics(x, y)
-        self.find_arm_locations()
 
-    def compute_kinematics(self, x, y, negative=True):
-
+        # normalize input coordiantes 
         x -= self.x_offset
         y -= self.y_offset
         
-        if negative: # this solution isn't working currently
-            q2 = -(np.arccos((x**2 + y**2 - self.a1**2 - self.a2**2) / (2.0 * self.a1 * self.a2)))
-            q1 = np.arctan2(y, x) - np.arctan2( (self.a2 * np.sin(q2)), (self.a1 + (self.a2 * np.cos(q2))) )
-        else:
-            q2 = np.arccos((x**2 + y**2 - self.a1**2 - self.a2**2) / (2.0 * self.a1 * self.a2))
-            q1 = np.arctan2(y, x) - np.arctan2( (self.a2 * np.sin(q2)), (self.a1 + (self.a2 * np.cos(q2))) )
-            
-        if np.isnan(q1) or np.isnan(q2):
-            raise ValueError("Invalid arm position: x:{} y:{}".format(x, y))
+        # negative q2 solution
+        q2_neg = -(np.arccos((x**2 + y**2 - self.a1**2 - self.a2**2) / (2.0 * self.a1 * self.a2)))
+        q1_neg = np.arctan2(y, x) - np.arctan2( (self.a2 * np.sin(q2_neg)), (self.a1 + (self.a2 * np.cos(q2_neg))) )
 
-        return q1, q2
-    
-    def find_arm_locations(self):
+        # postive q2 solution
+        q2_pos = np.arccos((x**2 + y**2 - self.a1**2 - self.a2**2) / (2.0 * self.a1 * self.a2))
+        q1_pos = np.arctan2(y, x) - np.arctan2( (self.a2 * np.sin(q2_pos)), (self.a1 + (self.a2 * np.cos(q2_pos))) )
+
+        if np.isnan(q1_pos) or np.isnan(q2_pos) or np.isnan(q1_neg) or np.isnan(q2_neg):
+            raise ValueError("Invalid arm position: x:{} y:{}".format(x + self.x_offset, y + self.y_offset))
+
+        # compare new angles with current angles
+        neg_error = np.sqrt((self.q2 - q2_neg)**2 + (self.q1 - q1_neg)**2)
+        pos_error = np.sqrt((self.q2 - q2_pos)**2 + (self.q1 - q1_pos)**2)
+
+        # chose angles with lowest MSE from current angles
+        if neg_error < pos_error:
+            self.q2 = q2_neg
+            self.q1 = q1_neg
+            print("neg\n")
+        else:
+            self.q2 = q2_pos
+            self.q1 = q1_pos
+            print("pos\n")
+
         self.x1 = self.a1 * np.cos(self.q1) + self.x_offset
         self.y1 = self.a1 * np.sin(self.q1) + self.y_offset
         self.x2 = self.x1 + (self.a2 * np.cos(self.q1+self.q2))
         self.y2 = self.y1 + (self.a2 * np.sin(self.q1+self.q2))
+
+        return self.q1, self.q2
