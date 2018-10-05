@@ -23,6 +23,8 @@ using namespace cv; // allows ... without using namespace cv::
 #define RESOLUTION CLEYE_VGA
 // QVGA or VGA
 typedef vector<Point2f> Point2fVector;
+
+/*used for passing data between main and camera thread*/
 typedef struct{
 	CLEyeCameraInstance CameraInstance;
 	Mat *Frame;
@@ -35,7 +37,7 @@ typedef struct{
 
 
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer);
-
+/*Simply displays the matrix and is formatted based off of the cols and rows*/
 void printMatrix(const Mat_<double>& C)
 {
 	cout << setprecision(3) << right << fixed;
@@ -49,7 +51,10 @@ void printMatrix(const Mat_<double>& C)
 		cout << endl;
 	}
 }
-
+/*This function takes in a particular mouse even (mEvent), left click in this case.
+When the left click is used, this function takes the x and y coordinate of the mouse pointer, and puts it
+into a vector.  The pointer to this vector is return thru param
+*/
 void MousCallback(int mEvent, int x, int y, int flags, void* param)
 {
 	Point2fVector* pPointVec = (Point2fVector*)param;
@@ -58,22 +63,24 @@ void MousCallback(int mEvent, int x, int y, int flags, void* param)
 		pPointVec->push_back(Point2f(float(x), float(y)));
 	}
 }
-//Hue
-//Saturation
-//Value
-int iLowH = 0;
+
+
+int iLowH = 0;				//Hue
 int iHighH = 179;
 
-int iLowS = 0;
+int iLowS = 0;				//Saturation
 int iHighS = 255;
 
-int iLowV = 0;
+int iLowV = 0;				//Value
 int iHighV = 255;
-Mat_<double> Homography;
-int setup;
 
 
+Mat_<double> Homography;	//H Matrix
+int setup;					//Variable that tells us which state we are in
+							//helps with system setup
 
+
+/*main function that ties everything together, threads and camera functionality will be initiated here*/
 int _tmain(int argc, _TCHAR* argv[])
 {
 	int Width,Height;
@@ -81,16 +88,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	setup = 0;
 	CLEyeCameraInstance EyeCamera=NULL;
 
-	Mat Frame;
-	Mat warped_display;
-	Mat binary_display;
+	Mat Frame;						//camera's native perspective
+	Mat warped_display;				//camera perspective after the homography is applied
+	Mat binary_display;				//binary, thresholded image (after erodes, dilates, and HSV application)
 
 	CAMERA_AND_FRAME ThreadPointer;
 	HANDLE _hThread;
 	CLEyeCameraParameter CamCurrentParam=(CLEyeCameraParameter)0;
 	bool CamParam=0;
 
-	Point2fVector points;
+	Point2fVector points;			//vector that holds the mouse click coordinates from setup image
 	//////////////////////
 
 	//////////////////// EYE CAMERA SETUP///////////////////////////////////
@@ -110,7 +117,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	/////////////////////////////////////MAIN CODE//////////////////////////////////////
 
 	// For high frame rate launch a seperate thread
-
 	//Need to copy vars into one var to launch the second thread
 	ThreadPointer.CameraInstance=EyeCamera;
 	ThreadPointer.Frame = &Frame;
@@ -119,7 +125,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	ThreadPointer.Threshold=0;
 	//Launch thread and confirm its running
-	//int setup = 1;
 	_hThread = CreateThread(NULL, 0, &CaptureThread, &ThreadPointer, 0, 0);
 	if(_hThread == NULL)
 	{
@@ -128,26 +133,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		return false;
 	}
 	
-	//set up the homography
-	//copy the current frame over for setup
-	Mat setup_img;
+	Mat setup_img;				//image that is used during the setup stage
+
 	
 	
 
 	double scale = 5.0;
-	Point2fVector points2;
-	//set up the manual dimensions
+	Point2fVector points2;		//Holds the dimension coordinates of the warped image
 
-	
-	//do the homography and get the H matrix
-
-	
-	//Mat unwarpImage;
-
-	
-
-	//Mat DT_img;//detection tracking image
-	//main loop that runs during camera feed operation
+	//main loop that runs during camera feed operation and 
 	while( 1 ) {
 
 		//This will capture keypresses and do whatever you want if you assign the appropriate actions to the right key code
@@ -156,7 +150,9 @@ int _tmain(int argc, _TCHAR* argv[])
 			case 27: //escape pressed
 				return 0;
 				break;
-			case 13: //enter key pressed, begin setup.  This can only be done once
+			case 13: //enter key pressed, begin setup.  This can only be done once.  Will maybe look at
+					 //doing this for a different part of the setup phase later.  This will require
+				     //more different conditionals involving the setup variable.
 				setup_img = Frame.clone();
 				imshow("initial image", setup_img);
 				MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
@@ -164,6 +160,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					"Click", MB_OK);
 				cvSetMouseCallback("initial image", MousCallback, &points);
 
+				//will wait for 4 mouse clicks before breaking out of loop
 				while (1)
 				{
 					// wait for mouse clicks
@@ -174,19 +171,20 @@ int _tmain(int argc, _TCHAR* argv[])
 						break;
 					}
 				}
+				//these are the points in the final image
 				points2.push_back(Point2f(0.0, 2000.0 / scale));
 				points2.push_back(Point2f(1000.0 / scale, 2000.0 / scale));
 				points2.push_back(Point2f(1000.0 / scale, 0.0));
 				points2.push_back(Point2f(0.0, 0.0));
-
+				//returns the H matrix
 				Homography = findHomography(Mat(points), Mat(points2));
-
+				//printing the H matrix, if needed
 				cout << "The transformation Matrix is :" << endl;
 				printMatrix(Homography);
 				cout << endl;
 
-				//warpPerspective(setup_img, unwarpImage, H, Size(1000.0 / scale, 2000.0 / scale));
 				//slider bars for adjusting the hue, saturation, and value settings
+				//control will be the name of the window
 				namedWindow("Control",CV_WINDOW_AUTOSIZE);
 				
 				cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
@@ -198,19 +196,17 @@ int _tmain(int argc, _TCHAR* argv[])
 				cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
 				cvCreateTrackbar("HighV", "Control", &iHighV, 255);
 
-				//imshow("warped image", unwarpImage);
 				setup = 1;
-
-
-
 				KeyPress = 0;
 				break;
+
 			default: //do nothing
 				break;
 		}
 		
 		//Display the captured frame
 		imshow( "Camera", Frame );
+		//Dispay warped and 
 		if (setup == 2)
 		{
 
@@ -239,10 +235,10 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 	int FramerCounter=0;
 	Mat CamImg=Mat(*(Instance->Frame)).clone();
-	Mat warped_display;// = Mat(*(Instance->Warped));
+	Mat warped_display;
 	Mat binary_display;
 	int scale = 5;
-	Mat imgHSV;
+	Mat imgHSV;				//warped image after HSV is applied
 	Mat thresholded;
 
 	int lastx = -1;
@@ -251,11 +247,10 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	double dM01;
 	double dM10;
 	double dArea;
-	int breakit = 268;
 	
 	int posX, posY;
 	Moments oMoments;
-	int change_amt = 30;
+	int change_amt = 30;				//puck location will not update unless it moves within bounds set by change_amt
 	int circle_rad = 0;
 
 	Point points;
@@ -271,24 +266,33 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 		//after we have the homography; setup==0
 		if (setup >= 1)
 		{
-
+			//what performs the homography, and warps image to our rectangular "rink"
 			warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
+			
+			//this could possible be removed without error in functionality
 			imgHSV = warped_display.clone();
+			
+			//apply the HSV to the
 			cvtColor(warped_display, imgHSV, COLOR_BGR2HSV);
+
+			//take a threshold of the image based off of the HSV values
 			inRange(imgHSV,Scalar(iLowH,iLowS,iLowV),Scalar(iHighH,iHighS,iHighV),thresholded);
 
+			//erode and dialate to capture the contour of the puck and eliminate noise
 			erode(thresholded,thresholded,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
 			dilate(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
 			erode(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 			dilate(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
+			//gather the area and XY center of the centroid/contour
 			oMoments = moments(thresholded,true);
 			dM01 = oMoments.m01;
 			dM10 = oMoments.m10;
 			dArea = oMoments.m00;
 
-			if (dArea > 10)
+			//to avoid reading noise, only update the puck image under and over a specific threshold
+			if (dArea > 10 && dArea <1000)
 			{
 				posX = dM10 / dArea;
 				posY = dM01 / dArea;
@@ -304,6 +308,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 					points.y = posY;
 					//stuff if there is a acceptable difference in the last and current then we change the last if ()
 					circle_rad = dArea / 10;
+					//display a circle around the centroid of the puck.
 					circle(warped_display, Point(posX, posY), circle_rad%100, Scalar(255, 0, 255), 2, 8, 0);
 				}
 				/*if (lastx != -1)
@@ -317,6 +322,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				circle(warped_display,Point(posX,posY),dArea/10,Scalar(255,0,255),2,8,0);*/
 			}
+			//display the XY coordinates of the puck in real time (according to the warped image)
 			cout << "Puck location: X-" << posX << " Y-" << posY << endl;
 			setup = 1;
 			*(Instance->warped_display) = warped_display;
