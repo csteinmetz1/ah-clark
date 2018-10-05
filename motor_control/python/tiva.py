@@ -53,8 +53,8 @@ class TivaController:
 
     def compute_kinematics(self, x, y, negative=True):
 
-        x += self.x_offset
-        y += self.y_offset
+        x -= self.x_offset
+        y -= self.y_offset
         
         if negative: # this solution isn't working currently
             q2 = -(np.arccos((x**2 + y**2 - self.a1**2 - self.a2**2) / (2.0 * self.a1 * self.a2)))
@@ -69,7 +69,7 @@ class TivaController:
         return q1, q2
     
     def find_arm_locations(self):
-        self.x1 = self.a1 * np.cos(self.q1)
-        self.y1 = self.a1 * np.sin(self.q1)
+        self.x1 = self.a1 * np.cos(self.q1) + self.x_offset
+        self.y1 = self.a1 * np.sin(self.q1) + self.y_offset
         self.x2 = self.x1 + (self.a2 * np.cos(self.q1+self.q2))
         self.y2 = self.y1 + (self.a2 * np.sin(self.q1+self.q2))
