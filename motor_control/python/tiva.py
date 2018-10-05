@@ -50,7 +50,15 @@ class TivaController:
         except socket.timeout:
             print('REQUEST TIMED OUT')
 
-    def move_arm(self, x, y):
+    def reset(self):
+        self.q1 = 0.0
+        self.q2 = 0.0
+        self.x1 = 0.0
+        self.y1 = 0.0
+        self.x2 = 0.0
+        self.y2 = 0.0
+
+    def move_arm(self, x, y, negative=False, downsample_threshold=None):
 
         # normalize input coordiantes 
         x -= self.x_offset
@@ -72,18 +80,35 @@ class TivaController:
         pos_error = np.sqrt((self.q2 - q2_pos)**2 + (self.q1 - q1_pos)**2)
 
         # chose angles with lowest MSE from current angles
-        if neg_error < pos_error:
-            self.q2 = q2_neg
-            self.q1 = q1_neg
-            print("neg\n")
+        if negative:
+            q2 = q2_neg
+            q1 = q1_neg
         else:
-            self.q2 = q2_pos
-            self.q1 = q1_pos
-            print("pos\n")
+            q2 = q2_pos
+            q1 = q1_pos
 
-        self.x1 = self.a1 * np.cos(self.q1) + self.x_offset
-        self.y1 = self.a1 * np.sin(self.q1) + self.y_offset
-        self.x2 = self.x1 + (self.a2 * np.cos(self.q1+self.q2))
-        self.y2 = self.y1 + (self.a2 * np.sin(self.q1+self.q2))
+        x1 = self.a1 * np.cos(q1) + self.x_offset
+        y1 = self.a1 * np.sin(q1) + self.y_offset
+        x2 = x1 + (self.a2 * np.cos(q1+q2))
+        y2 = y1 + (self.a2 * np.sin(q1+q2))
+
+        delta = np.sqrt( (x1 - self.x1)**2 + (y1 - self.y1)**2 )
+        #print("delta: ", delta)
+
+        if downsample_threshold:
+            if delta > downsample_threshold:
+                self.q1 = q1
+                self.q2 = q2
+                self.x1 = x1
+                self.y1 = y1
+                self.x2 = x2
+                self.y2 = y2
+        else:
+            self.q1 = q1
+            self.q2 = q2
+            self.x1 = x1
+            self.y1 = y1
+            self.x2 = x2
+            self.y2 = y2
 
         return self.q1, self.q2
