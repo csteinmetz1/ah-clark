@@ -74,6 +74,10 @@ int iHighS = 255;
 int iLowV = 0;				//Value
 int iHighV = 255;
 
+int gain = 30;
+int exposure = 90;
+
+
 
 Mat_<double> Homography;	//H Matrix
 int setup;					//Variable that tells us which state we are in
@@ -186,6 +190,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				//slider bars for adjusting the hue, saturation, and value settings
 				//control will be the name of the window
 				namedWindow("Control",CV_WINDOW_AUTOSIZE);
+				namedWindow("Cam Control", CV_WINDOW_AUTOSIZE);
 				
 				cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
 				cvCreateTrackbar("HighH", "Control", &iHighH, 179);
@@ -195,6 +200,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 				cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
 				cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+				cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
+
+				cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
+
 
 				setup = 1;
 				KeyPress = 0;
@@ -204,6 +213,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				break;
 		}
 		
+
 		//Display the captured frame
 		imshow( "Camera", Frame );
 		//Dispay warped and 
@@ -213,6 +223,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			imshow("Warped", warped_display);
 			imshow("Binary Image", binary_display);
 		}
+		CLEyeSetCameraParameter(EyeCamera, CLEYE_GAIN, gain);
+		CLEyeSetCameraParameter(EyeCamera, CLEYE_EXPOSURE, exposure);
 	}
 	
 	CLEyeCameraStop(EyeCamera);
@@ -239,7 +251,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	Mat binary_display;
 	int scale = 5;
 	Mat imgHSV;				//warped image after HSV is applied
-	Mat thresholded;
+	Mat thresholded, ed1, ed2, final_thresh;
 
 	int lastx = -1;
 	int lasty = -1;
@@ -247,6 +259,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	double dM01;
 	double dM10;
 	double dArea;
+	double prevArea = 0;
 	
 	int posX, posY;
 	Moments oMoments;
@@ -279,55 +292,71 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			inRange(imgHSV,Scalar(iLowH,iLowS,iLowV),Scalar(iHighH,iHighS,iHighV),thresholded);
 
 			//erode and dialate to capture the contour of the puck and eliminate noise
-			erode(thresholded,thresholded,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
-			dilate(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+			erode(thresholded,ed1,getStructuringElement(MORPH_ELLIPSE,Size(10,10)));
+			dilate(ed1, ed2, getStructuringElement(MORPH_ELLIPSE, Size(10, 10)));
+			//final_thresh = thresholded.clone();
 
-			erode(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-			dilate(thresholded, thresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+			erode(ed2, ed1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+			dilate(ed1, final_thresh, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
 			//gather the area and XY center of the centroid/contour
-			oMoments = moments(thresholded,true);
+			oMoments = moments(final_thresh,true);
 			dM01 = oMoments.m01;
 			dM10 = oMoments.m10;
 			dArea = oMoments.m00;
-
-			//to avoid reading noise, only update the puck image under and over a specific threshold
-			if (dArea > 10 && dArea <1000)
+			//maybe use canny
+			//to avoid reading noise, only update the puck image under and over a specific area size
+			if (dArea > 115 && dArea <500)
 			{
+
 				posX = dM10 / dArea;
 				posY = dM01 / dArea;
-				//stuff if there is a acceptable difference in the last and current then we change the last if ()
-				if (lastx >= posX+change_amt || lastx <= posX-change_amt || lasty >= posY+change_amt || lasty <= posY - change_amt)
+				//detect the puck and start anew
+				if (lastx == -1 && lasty == -1)
 				{
-					if (lastx != -1)
-						posX = lastx;
-					if (lasty != -1)
-						posY = lasty;
+					lastx = posX;
+					lasty = posY;
+				}
 
+				if (posX>lastx+change_amt || posX<lastx-change_amt)
+				{
+					posX = lastx;
+					posY = lasty;
+					dArea = prevArea;
+				}
+				
+				if (posY > lasty + change_amt || posY < lasty - change_amt)
+				{
+					posX = lastx;
+					posY = lasty;
+					dArea = prevArea;
+				}
 					points.x = posX;
 					points.y = posY;
 					//stuff if there is a acceptable difference in the last and current then we change the last if ()
 					circle_rad = dArea / 10;
 					//display a circle around the centroid of the puck.
-					circle(warped_display, Point(posX, posY), circle_rad%100, Scalar(255, 0, 255), 2, 8, 0);
-				}
-				/*if (lastx != -1)
-					posX = lastx;
-				if (lasty != -1)
-					posY = lasty;
+					circle(warped_display, Point(posX, posY), circle_rad % 100, Scalar(255, 0, 255), 2, 8, 0);
+					prevArea = dArea;
+					lastx = posX;
+					lasty = posY;
 
-				points.x = posX;
-				points.y = posY;
-				//stuff if there is a acceptable difference in the last and current then we change the last if ()
-
-				circle(warped_display,Point(posX,posY),dArea/10,Scalar(255,0,255),2,8,0);*/
+				
+			}
+			else
+			{
+				lastx = -1;
+				lasty = -1;
+				posX = -1;
+				posY = -1;
 			}
 			//display the XY coordinates of the puck in real time (according to the warped image)
-			cout << "Puck location: X-" << posX << " Y-" << posY << endl;
+			//cout << "Last: X-" << lastx << "Y-" << lasty << endl;
+			cout <<"\t"<< posX << posY << "\t"<< endl;
 			setup = 1;
 			*(Instance->warped_display) = warped_display;
 
-			*(Instance->binary_display) = thresholded;
+			*(Instance->binary_display) = final_thresh;
 			setup = 2;
 
 
