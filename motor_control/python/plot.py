@@ -1,4 +1,5 @@
 import sys
+from time import sleep
 import numpy as np
 import matplotlib.pyplot as plt
 from tiva import TivaController
@@ -6,13 +7,16 @@ from tiva import TivaController
 Tiva = TivaController(units_per_cm=1, arm1_cm=45, arm2_cm=20, 
 						x_offset_cm=33, y_offset_cm=-10, bufsize=8)
 
-n_steps = 100
-plot = 'weird'
+n_steps = 50
+plot = 'point'
 clear = True
 
 if   plot == 'random':
 	x = np.random.randint(10, 60, n_steps)
 	y = np.random.randint(20, 50, n_steps)
+elif plot == 'point':
+	x = [5]
+	y = [20]
 elif plot == 'line':
 	x = np.linspace(0, 15, n_steps/2) 
 	y = np.linspace(5, 20, n_steps)
@@ -24,7 +28,7 @@ elif plot == 'circle':
 elif plot == 'weird':	
 	t = np.linspace(15, 50,  num=n_steps)
 	x = (t + 2 * np.sin(2 * t)) * 2
-	y = 12 * np.sin(t) + 30
+	y =  12 * np.sin(t) + 30
 
 fig, ax = plt.subplots()
 
@@ -33,7 +37,7 @@ for idx, point in enumerate(zip(x, y)):
 	sel = np.random.random_integers(0, 1)
 
 	# move the arm
-	Tiva.move_arm(point[0], point[1], negative=sel)
+	Tiva.move_arm(point[0], point[1], negative=True)
 
 	sys.stdout.write("Computing step {0}/{1}\r".format(idx, n_steps))
 	sys.stdout.flush()
@@ -53,4 +57,8 @@ for idx, point in enumerate(zip(x, y)):
 	ax.grid('on')
 	plt.savefig("img/{}.png".format(idx))
 	
-	#comm.send([q1, q2]) # send signal to the Tiva
+	print(Tiva.q1)
+
+	#Tiva.send([Tiva.q1, Tiva.q2]) # send signal to the Tiva
+	#print(Tiva.receive())
+	#sleep(1)

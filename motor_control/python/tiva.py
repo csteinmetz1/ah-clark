@@ -4,7 +4,7 @@ import struct
 import numpy as np
 
 class TivaController:
-    def __init__(self, units_per_cm=1, arm1_cm=45, arm2_cm=15, x_offset_cm=0, y_offset_cm=0, bufsize=8):
+    def __init__(self, units_per_cm=1, arm1_cm=46.8313, arm2_cm=20, x_offset_cm=0, y_offset_cm=0, bufsize=8):
         # Arm properties
         self.units_per_cm = units_per_cm
 
@@ -44,7 +44,7 @@ class TivaController:
         except:
             pass
 
-    def recieve(self):
+    def receive(self):
         try:
             data, server = self.receiver.recvfrom(self.bufsize)
         except socket.timeout:
