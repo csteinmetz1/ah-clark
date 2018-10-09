@@ -14,15 +14,17 @@
 //#include <opencv2/core/ocl.hpp>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "Homography.h"
 
 using namespace std; //allows aceess to all std lib functions without using the namespace std::
 using namespace cv; // allows ... without using namespace cv::
 
+//void printMatrix(const Mat_<double>& C);
+//void MousCallback(int mEvent, int x, int y, int flags, void* param);
 
 #define FRAME_RATE 60
 #define RESOLUTION CLEYE_VGA
 // QVGA or VGA
-typedef vector<Point2f> Point2fVector;
 
 /*used for passing data between main and camera thread*/
 typedef struct{
@@ -37,32 +39,7 @@ typedef struct{
 
 
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer);
-/*Simply displays the matrix and is formatted based off of the cols and rows*/
-void printMatrix(const Mat_<double>& C)
-{
-	cout << setprecision(3) << right << fixed;
 
-	for (int row = 0; row < C.rows; ++row)
-	{
-		for (int col = 0; col < C.cols; ++col)
-		{
-			cout << setw(5) << C(row, col) << " ";
-		}
-		cout << endl;
-	}
-}
-/*This function takes in a particular mouse even (mEvent), left click in this case.
-When the left click is used, this function takes the x and y coordinate of the mouse pointer, and puts it
-into a vector.  The pointer to this vector is return thru param
-*/
-void MousCallback(int mEvent, int x, int y, int flags, void* param)
-{
-	Point2fVector* pPointVec = (Point2fVector*)param;
-	if (mEvent == CV_EVENT_LBUTTONDOWN)
-	{
-		pPointVec->push_back(Point2f(float(x), float(y)));
-	}
-}
 
 
 int iLowH = 0;				//Hue
@@ -80,6 +57,7 @@ int exposure = 90;
 
 
 Mat_<double> Homography;	//H Matrix
+
 int setup;					//Variable that tells us which state we are in
 							//helps with system setup
 
@@ -253,15 +231,15 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	Mat imgHSV;				//warped image after HSV is applied
 	Mat thresholded, ed1, ed2, final_thresh;
 
-	int lastx = -1;
-	int lasty = -1;
+	double lastx = -1.0;
+	double lasty = -1.0;
 
 	double dM01;
 	double dM10;
 	double dArea;
-	double prevArea = 0;
+	double prevArea = 0.0;
 	
-	int posX, posY;
+	double posX, posY;
 	Moments oMoments;
 	int change_amt = 30;				//puck location will not update unless it moves within bounds set by change_amt
 	int circle_rad = 0;

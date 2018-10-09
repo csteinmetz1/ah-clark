@@ -27,6 +27,9 @@
     <ClCompile Include="Tiva.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Homography.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraControl.h">
@@ -42,6 +45,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Tiva.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Homography.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
