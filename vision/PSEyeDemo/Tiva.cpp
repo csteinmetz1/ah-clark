@@ -1,4 +1,4 @@
-#include "stdafx.h"
+
 #include <iostream> 
 #include <tuple>
 #include <string>
@@ -33,7 +33,7 @@ void TivaController::resetArm(void)
 
 void TivaController::moveArm(double x, double y, bool negative) 
 {
-	tuple<double, double> newAngles;
+	tuple<double,double> newAngles;
 	newAngles = computeKinematics(x, y, negative);
 	setMotor1Angle(get<0>(newAngles));
 	setMotor2Angle(get<1>(newAngles));
@@ -68,9 +68,9 @@ void TivaController::updateArmLocation()
 	y2 = y1 + (a2 * sin(q1+q2));
 }
 
-/*int main() {
+int main() {
 	TivaController Tiva = TivaController(1.0, 45.0, 20.0, 33.0, -10.0);
 	cout << Tiva.getMotor1Angle() << "\n";
 	Tiva.moveArm(5.0, 20.0, false);
 	cout << Tiva.getMotor1Angle() << "\n";
-}*/
+}

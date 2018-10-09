@@ -1,17 +1,17 @@
 #include <tuple>
 #include <string>
 
-
 using namespace std;
 
 class TivaController 
 {
+	typedef tuple<int,int> Point;
 	public:
 		// getter methods
 		double getMotor1Angle() const {return q1;}
 		double getMotor2Angle() const {return q2;}
-		tuple<double, double> getArm1Location() const {return make_tuple(x1, y1);}
-		tuple<double, double> getArm2Location() const {return make_tuple(x2, y2);}
+		Point getArm1Location() const {return make_tuple(x1, y1);}
+		Point getArm2Location() const {return make_tuple(x2, y2);}
 		double getArm1Length() const {return a1;}
 		double getArm2Length() const {return a2;}
 		double getxOffset() const {return xOffset;}
@@ -29,7 +29,7 @@ class TivaController
 		void moveArm(double x, double y, bool negative);
 		void resetArm();
 		void updateArmLocation();
-		tuple<double, double> computeKinematics(double x, double y, bool negative);
+		tuple<double,double> computeKinematics(double x, double y, bool negative);
 
 		// Constructor
 		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, 
