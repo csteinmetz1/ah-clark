@@ -15,6 +15,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Homography.h"
+#include "Image_Proc.h"
 
 using namespace std; //allows aceess to all std lib functions without using the namespace std::
 using namespace cv; // allows ... without using namespace cv::
@@ -39,20 +40,21 @@ typedef struct{
 
 
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer);
+void inst_taskbars(void);
 
 
 
-int iLowH = 0;				//Hue
-int iHighH = 179;
+int iLowH = 42;				//Hue
+int iHighH = 92;
 
-int iLowS = 0;				//Saturation
+int iLowS = 26;				//Saturation
 int iHighS = 255;
 
 int iLowV = 0;				//Value
 int iHighV = 255;
 
-int gain = 30;
-int exposure = 90;
+int gain = 0;
+int exposure = 180;
 
 
 
@@ -122,6 +124,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	double scale = 5.0;
 	Point2fVector points2;		//Holds the dimension coordinates of the warped image
+	points2.push_back(Point2f(0.0, 2000.0 / scale));
+	points2.push_back(Point2f(1000.0 / scale, 2000.0 / scale));
+	points2.push_back(Point2f(1000.0 / scale, 0.0));
+	points2.push_back(Point2f(0.0, 0.0));
 
 	//main loop that runs during camera feed operation and 
 	while( 1 ) {
@@ -136,6 +142,9 @@ int _tmain(int argc, _TCHAR* argv[])
 					 //doing this for a different part of the setup phase later.  This will require
 				     //more different conditionals involving the setup variable.
 				setup_img = Frame.clone();
+				/*  
+
+				//uncomment to test the coordinates
 				imshow("initial image", setup_img);
 				MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
 					"Click the left up corner first and clockwise for the rest.",
@@ -150,16 +159,23 @@ int _tmain(int argc, _TCHAR* argv[])
 					if (points.size() == 4)
 					{
 						cout << "4 points gathered" << endl;
+						cout << points[0].x << "\t" << points[0].y<<endl;
+						cout << points[1].x << "\t" << points[1].y << endl;
+						cout << points[2].x << "\t" << points[2].y << endl;
+						cout << points[3].x << "\t" << points[3].y << endl;
+
 						break;
 					}
 				}
-				//these are the points in the final image
-				points2.push_back(Point2f(0.0, 2000.0 / scale));
-				points2.push_back(Point2f(1000.0 / scale, 2000.0 / scale));
-				points2.push_back(Point2f(1000.0 / scale, 0.0));
-				points2.push_back(Point2f(0.0, 0.0));
+				getchar();*/
+				points.push_back(Point2f(622, 474));
+				points.push_back(Point2f(577, 0));
+				points.push_back(Point2f(52, 118));
+				points.push_back(Point2f(65, 373));
+
 				//returns the H matrix
 				Homography = findHomography(Mat(points), Mat(points2));
+				
 				//printing the H matrix, if needed
 				cout << "The transformation Matrix is :" << endl;
 				printMatrix(Homography);
@@ -167,20 +183,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 				//slider bars for adjusting the hue, saturation, and value settings
 				//control will be the name of the window
-				namedWindow("Control",CV_WINDOW_AUTOSIZE);
-				namedWindow("Cam Control", CV_WINDOW_AUTOSIZE);
-				
-				cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
-				cvCreateTrackbar("HighH", "Control", &iHighH, 179);
-
-				cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
-				cvCreateTrackbar("HighS", "Control", &iHighS, 255);
-
-				cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
-				cvCreateTrackbar("HighV", "Control", &iHighV, 255);
-				cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
-
-				cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
+				inst_taskbars();
 
 
 				setup = 1;
@@ -237,7 +240,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	double dM01;
 	double dM10;
 	double dArea;
-	double prevArea = 0.0;
+	double lastArea = 0.0;
 	
 	double posX, posY;
 	Moments oMoments;
@@ -258,8 +261,8 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 		if (setup >= 1)
 		{
 			//what performs the homography, and warps image to our rectangular "rink"
+			setup = 1;
 			warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
-			
 			//this could possible be removed without error in functionality
 			imgHSV = warped_display.clone();
 			
@@ -269,81 +272,35 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			//take a threshold of the image based off of the HSV values
 			inRange(imgHSV,Scalar(iLowH,iLowS,iLowV),Scalar(iHighH,iHighS,iHighV),thresholded);
 
-			//erode and dialate to capture the contour of the puck and eliminate noise
-			erode(thresholded,ed1,getStructuringElement(MORPH_ELLIPSE,Size(10,10)));
-			dilate(ed1, ed2, getStructuringElement(MORPH_ELLIPSE, Size(10, 10)));
-			//final_thresh = thresholded.clone();
+			//this line sets up final_thresh's width and height params to that of thresholded
+			final_thresh = thresholded.clone();
+			noise_reduction(final_thresh,thresholded);
 
-			erode(ed2, ed1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-			dilate(ed1, final_thresh, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
 			//gather the area and XY center of the centroid/contour
 			oMoments = moments(final_thresh,true);
-			dM01 = oMoments.m01;
-			dM10 = oMoments.m10;
-			dArea = oMoments.m00;
-			//maybe use canny
-			//to avoid reading noise, only update the puck image under and over a specific area size
-			if (dArea > 115 && dArea <500)
-			{
-
-				posX = dM10 / dArea;
-				posY = dM01 / dArea;
-				//detect the puck and start anew
-				if (lastx == -1 && lasty == -1)
-				{
-					lastx = posX;
-					lasty = posY;
-				}
-
-				if (posX>lastx+change_amt || posX<lastx-change_amt)
-				{
-					posX = lastx;
-					posY = lasty;
-					dArea = prevArea;
-				}
-				
-				if (posY > lasty + change_amt || posY < lasty - change_amt)
-				{
-					posX = lastx;
-					posY = lasty;
-					dArea = prevArea;
-				}
-					points.x = posX;
-					points.y = posY;
-					//stuff if there is a acceptable difference in the last and current then we change the last if ()
-					circle_rad = dArea / 10;
-					//display a circle around the centroid of the puck.
-					circle(warped_display, Point(posX, posY), circle_rad % 100, Scalar(255, 0, 255), 2, 8, 0);
-					prevArea = dArea;
-					lastx = posX;
-					lasty = posY;
-
-				
-			}
-			else
-			{
-				lastx = -1;
-				lasty = -1;
-				posX = -1;
-				posY = -1;
-			}
+			puck_location(warped_display,oMoments, &lastx, &lasty, &lastArea, &posX, &posY);
+			
 			//display the XY coordinates of the puck in real time (according to the warped image)
-			//cout << "Last: X-" << lastx << "Y-" << lasty << endl;
-			cout <<"\t"<< posX << posY << "\t"<< endl;
+			cout << posX << "\t"<< posY << endl;
 			setup = 1;
 			*(Instance->warped_display) = warped_display;
 
 			*(Instance->binary_display) = final_thresh;
 			setup = 2;
-
-
-
-
-
 		}
 
 		//copy it to main thread image.
+		if (setup == 0)
+		{
+			//this can change later
+			circle(CamImg, Point(467, 374), 2, Scalar(255, 0, 255), 2, 8, 0);
+			circle(CamImg, Point(456, 97), 2, Scalar(255, 0, 255), 2, 8, 0);
+			circle(CamImg, Point(113, 150), 2, Scalar(255, 0, 255), 2, 8, 0);
+			circle(CamImg, Point(120, 340), 2, Scalar(255, 0, 255), 2, 8, 0);
+
+
+		}
 		*(Instance->Frame) = CamImg;
 		//imshow("Camera Feed",CamImg);
 
@@ -358,4 +315,23 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	}
 	return 0;
 }
+//function that instantiates the trackbars with sliders
+void inst_taskbars(void)
+{
+	namedWindow("Control", CV_WINDOW_AUTOSIZE);
+	namedWindow("Cam Control", CV_WINDOW_AUTOSIZE);
+
+	cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+	cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+
+	cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+	cvCreateTrackbar("HighS", "Control", &iHighS, 255);
+
+	cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+	cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+	
+	cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
+	cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
+}
+
 
