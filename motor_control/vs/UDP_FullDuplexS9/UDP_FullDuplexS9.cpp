@@ -9,6 +9,7 @@
 #include "xPCUDPSock.h"
 #include <stdio.h>
 #include <string>
+#include <Tiva.h>
 
 #pragma pack(push,1) // Important! Tell the compiler to pack things up tightly 
 
@@ -51,35 +52,31 @@ int _tmain(int argc, TCHAR* argv[])
 		PACKIN pkin;
 		PACKOUT pkout;
 		char string[256];
-		float motor1, motor2;
+		double x, y;
 		char* pEnd;
+		TivaController Tiva = TivaController(1.0, 46.8313, 25.4, 33.02, -26.67);
 		// Routing data endlessly
 		while (1)
 		{
 
-			printf("Enter angle for MAIN motor: ");
+			printf("Enter x: ");
 			fgets(string, 100, stdin);
-			motor1 = strtof(string, &pEnd);
+			x = strtof(string, &pEnd);
 
-			printf("Enter angle for SECONDARY motor: ");
+			printf("Enter y: ");
 			fgets(string, 100, stdin);
-			motor2 = strtof(string, &pEnd);
+			y = strtof(string, &pEnd);
 			printf("\n");
 			// prevent from running to fast
 			Sleep(1);
 			// get latest data from receiver
 			receiver.GetData(&pkin);
 
-			/*if (value > 110) {
-			value = 110;
-			}
-			else if (value < -110) {
-			value = -110;
-			}*/
+			Tiva.moveArm(x, y, false);
 
 			// repack the data
-			pkout.flt1 = motor1;
-			pkout.flt2 = motor2;
+			pkout.flt1 = Tiva.getMotor1Angle();
+			pkout.flt2 = Tiva.getMotor2Angle();
 
 			// send the repacked data through sender
 			sender.SendData(&pkout);
