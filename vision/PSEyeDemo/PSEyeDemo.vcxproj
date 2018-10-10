@@ -96,7 +96,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CameraControl.cpp" />
+    <ClCompile Include="Homography.cpp" />
     <ClCompile Include="PSEyeDemo.cpp" />
+    <ClCompile Include="Image_Proc.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -105,6 +107,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraControl.h" />
+    <ClInclude Include="Header.h" />
+    <ClInclude Include="Homography.h" />
+    <ClInclude Include="Image_Proc.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
