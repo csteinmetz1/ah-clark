@@ -130,79 +130,99 @@ int _tmain(int argc, _TCHAR* argv[])
 	points2.push_back(Point2f(0.0, 0.0));
 
 	//main loop that runs during camera feed operation and 
-	while( 1 ) {
+	while (1) {
 
 		//This will capture keypresses and do whatever you want if you assign the appropriate actions to the right key code
 		KeyPress = waitKey(1);
-		switch (KeyPress){
-			case 27: //escape pressed
-				return 0;
-				break;
-			case 13: //enter key pressed, begin setup.  This can only be done once.  Will maybe look at
-					 //doing this for a different part of the setup phase later.  This will require
-				     //more different conditionals involving the setup variable.
-				setup_img = Frame.clone();
-				/*  
+		switch (KeyPress) {
+		case 27: //escape pressed
+			return 0;
+			break;
+		case 13: //enter key pressed, begin setup.  This can only be done once.  Will maybe look at
+				 //doing this for a different part of the setup phase later.  This will require
+				 //more different conditionals involving the setup variable.
+			setup_img = Frame.clone();
+			/*
 
-				//uncomment to test the coordinates
-				imshow("initial image", setup_img);
-				MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
-					"Click the left up corner first and clockwise for the rest.",
-					"Click", MB_OK);
-				cvSetMouseCallback("initial image", MousCallback, &points);
+			//uncomment to test the coordinates
+			imshow("initial image", setup_img);
+			MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
+				"Click the left up corner first and clockwise for the rest.",
+				"Click", MB_OK);
+			cvSetMouseCallback("initial image", MousCallback, &points);
 
-				//will wait for 4 mouse clicks before breaking out of loop
-				while (1)
+			//will wait for 4 mouse clicks before breaking out of loop
+			while (1)
+			{
+				// wait for mouse clicks
+				waitKey(10);
+				if (points.size() == 4)
 				{
-					// wait for mouse clicks
-					waitKey(10);
-					if (points.size() == 4)
-					{
-						cout << "4 points gathered" << endl;
-						cout << points[0].x << "\t" << points[0].y<<endl;
-						cout << points[1].x << "\t" << points[1].y << endl;
-						cout << points[2].x << "\t" << points[2].y << endl;
-						cout << points[3].x << "\t" << points[3].y << endl;
+					cout << "4 points gathered" << endl;
+					cout << points[0].x << "\t" << points[0].y<<endl;
+					cout << points[1].x << "\t" << points[1].y << endl;
+					cout << points[2].x << "\t" << points[2].y << endl;
+					cout << points[3].x << "\t" << points[3].y << endl;
 
-						break;
-					}
+					break;
 				}
-				getchar();*/
-				points.push_back(Point2f(622, 474));
-				points.push_back(Point2f(577, 0));
-				points.push_back(Point2f(52, 118));
-				points.push_back(Point2f(65, 373));
+			}
+			getchar();*/
+			points.push_back(Point2f(622, 474));
+			points.push_back(Point2f(577, 0));
+			points.push_back(Point2f(52, 118));
+			points.push_back(Point2f(65, 373));
 
-				//returns the H matrix
-				Homography = findHomography(Mat(points), Mat(points2));
-				
-				//printing the H matrix, if needed
-				cout << "The transformation Matrix is :" << endl;
-				printMatrix(Homography);
-				cout << endl;
+			//returns the H matrix
+			Homography = findHomography(Mat(points), Mat(points2));
 
-				//slider bars for adjusting the hue, saturation, and value settings
-				//control will be the name of the window
-				inst_taskbars();
+			//printing the H matrix, if needed
+			cout << "The transformation Matrix is :" << endl;
+			printMatrix(Homography);
+			cout << endl;
+
+			//slider bars for adjusting the hue, saturation, and value settings
+			//control will be the name of the window
+			inst_taskbars();
 
 
-				setup = 1;
-				KeyPress = 0;
-				break;
+			setup = 1;
+			KeyPress = 0;
+			break;
 
-			default: //do nothing
-				break;
+		default: //do nothing
+			break;
 		}
-		
+
 
 		//Display the captured frame
-		imshow( "Camera", Frame );
+		try
+		{
+			imshow("Camera", Frame);
+		}
+		catch(exception&)
+		{
+			cout << "camera exception" << endl;
+		}
 		//Dispay warped and 
 		if (setup == 2)
 		{
-
-			imshow("Warped", warped_display);
-			imshow("Binary Image", binary_display);
+			try
+			{
+				imshow("Warped", warped_display);
+			}
+			catch (exception&)
+			{
+				cout << "warped exception" << endl;
+			}
+			try
+			{
+				imshow("Binary Image", binary_display);
+			}
+			catch (exception&)
+			{
+				cout << "binary exception" << endl;
+			}
 		}
 		CLEyeSetCameraParameter(EyeCamera, CLEYE_GAIN, gain);
 		CLEyeSetCameraParameter(EyeCamera, CLEYE_EXPOSURE, exposure);
