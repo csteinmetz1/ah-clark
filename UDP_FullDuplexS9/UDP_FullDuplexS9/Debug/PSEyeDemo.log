@@ -1,0 +1,11 @@
+﻿  PSEyeDemo.cpp
+c:\opencv\build\include\opencv2\flann\logger.h(66): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(127): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(128): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(129): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(265): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(241): warning C4101: 'dM10': unreferenced local variable
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(242): warning C4101: 'dArea': unreferenced local variable
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\ah-clark-dylan\vision\pseyedemo\pseyedemo.cpp(240): warning C4101: 'dM01': unreferenced local variable
+  PSEyeDemo.vcxproj -> C:\Users\Eddie\Dropbox\Documents\Senior Design 2\Visual Studio\ah-clark-dylan\vision\Debug\PSEyeDemo.exe
