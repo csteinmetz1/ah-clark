@@ -1,35 +1,39 @@
 #include <tuple>
 #include <string>
-
-using namespace std;
+#include <iostream> 
+#include <cmath>
+#include "Puck.h"
 
 class TivaController 
 {
-	typedef tuple<int,int> Point;
 	public:
 		// getter methods
-		double getMotor1Angle() const {return q1;}
-		double getMotor2Angle() const {return q2;}
-		Point getArm1Location() const {return make_tuple(x1, y1);}
-		Point getArm2Location() const {return make_tuple(x2, y2);}
-		double getArm1Length() const {return a1;}
-		double getArm2Length() const {return a2;}
-		double getxOffset() const {return xOffset;}
-		double getyOffset() const {return yOffset;}
+		double getMotor1Angle() const;
+		double getMotor2Angle() const;
+		Vec getArm1Location() const;
+		Vec getArm2Location() const;
+		double getArm1Length() const;
+		double getArm2Length() const;
+		double getxOffset() const;
+		double getyOffset() const;
 
 		// setter methods
-		void setMotor1Angle(double new_q1) { q1 = new_q1; updateArmLocation();}
-		void setMotor2Angle(double new_q2) { q2 = new_q2; updateArmLocation();}
-		void setXOffsetCm(double new_xOffsetCm) {xOffset = new_xOffsetCm * unitsPerCm;}
-		void setYOffsetCm(double new_yOffsetCm) {xOffset = new_yOffsetCm * unitsPerCm;}
-		void setArm1Cm(double new_arm1Cm) {a1 = new_arm1Cm * unitsPerCm;}
-		void setArm2Cm(double new_arm2Cm) {a2= new_arm2Cm * unitsPerCm;}
+		void setMotor1Angle(double new_q1);
+		void setMotor2Angle(double new_q2);
+		void setXOffsetCm(double new_xOffsetCm);
+		void setYOffsetCm(double new_yOffsetCm);
+		void setArm1Cm(double new_arm1Cm);
+		void setArm2Cm(double new_arm2Cm);
 
 		// arm movement methods
-		void moveArm(double x, double y, bool negative);
 		void resetArm();
 		void updateArmLocation();
-		tuple<double,double> computeKinematics(double x, double y, bool negative);
+		void moveArm(Vec point, bool negative);
+		std::tuple<double,double> computeKinematics(Vec point, bool negative);
+
+		// puck methods
+		Vec computeVelocity(Vec init_pos, Vec final_pos, int frames);
+		std::vector<Vec> computeTrajectory(Puck puck, int estimation_size);
 
 		// Constructor
 		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, 
@@ -38,10 +42,13 @@ class TivaController
 	private:
 		double q1;
 		double q2;
-		double x1;
-		double y1;
-		double x2;
-		double y2;
+		Vec arm1Pos;
+		Vec arm2Pos;
+		
+		//double x1;
+		//double y1;
+		//double x2;
+		//double y2;
 
 		double unitsPerCm;
 		double xOffset;
