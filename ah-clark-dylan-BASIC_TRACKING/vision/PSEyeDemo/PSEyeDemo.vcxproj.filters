@@ -33,7 +33,7 @@
     <ClCompile Include="Image_Proc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\UDP_FullDuplexS9\UDP_FullDuplexS9\UDP_FullDuplexS9.cpp">
+    <ClCompile Include="Puck.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,9 +53,6 @@
     <ClInclude Include="Tiva.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Homography.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -65,7 +62,10 @@
     <ClInclude Include="xPCUDPSock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UDP_FullDuplexS9.h">
+    <ClInclude Include="Puck.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UDP_setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

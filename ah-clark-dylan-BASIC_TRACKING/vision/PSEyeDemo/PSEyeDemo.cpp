@@ -16,7 +16,13 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Homography.h"
 #include "Image_Proc.h"
-#include "UDP_FullDuplexS9.h"
+//#include "UDP_FullDuplexS9.h"
+#include "Tiva.h"
+#include "xPCUDPSock.h"
+//#include <winsock2.h>
+#include "UDP_setup.h"
+//#include <vector>
+//#include "Puck.h"
 
 using namespace std; //allows aceess to all std lib functions without using the namespace std::
 using namespace cv; // allows ... without using namespace cv::
@@ -41,6 +47,7 @@ typedef struct{
 
 
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer);
+static DWORD WINAPI ArmThread(LPVOID);
 void inst_taskbars(void);
 
 
@@ -56,14 +63,21 @@ int iHighV = 255;
 
 int gain = 0;
 int exposure = 180;
-float lastQ1;
-float lastQ2;
+
 
 
 Mat_<double> Homography;	//H Matrix
 
 int setup;					//Variable that tells us which state we are in
 							//helps with system setup
+							
+							//variables help communicate data between the arm and image proc threads
+double sendx;
+double sendy;
+float lastQ1 = 0;
+float lastQ2 = 0;
+
+int arm_comm;
 
 
 /*main function that ties everything together, threads and camera functionality will be initiated here*/
@@ -118,7 +132,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		getchar();
 		return false;
 	}
-	
+	_hThread = CreateThread(NULL, 0, &ArmThread, NULL, 0, 0);
+	if (_hThread == NULL)
+	{
+		printf("Failed to create thread...");
+		getchar();
+		return false;
+	}
 	Mat setup_img;				//image that is used during the setup stage
 
 	
@@ -268,106 +288,256 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	int change_amt = 30;				//puck location will not update unless it moves within bounds set by change_amt
 	int circle_rad = 0;
 
-	double sendx;
-	double sendy;
+
+
 
 	Point points;
 	points.x = 0;
 	points.y = 0;
 	clock_t StartTime,EndTime;
-	while(1){
-		//Get Frame From Camera
-		CLEyeCameraGetFrame(Instance->CameraInstance,CamImg.data);
-		
 
-		// DO YOUR IMAGE PROCESSING HERE
-		//after we have the homography; setup==0
-		if (setup >= 1)
-		{
-			//what performs the homography, and warps image to our rectangular "rink"
-			setup = 1;
-			warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
-			
-			//flip image around the y axis
-			flip(warped_display, flipped_display, 1);
-			warped_display = flipped_display.clone();
-			
-			//this could possible be removed without error in functionality
-			imgHSV = warped_display.clone();
-			
-			//apply the HSV to the
-			cvtColor(warped_display, imgHSV, COLOR_BGR2HSV);
-
-			//take a threshold of the image based off of the HSV values
-			inRange(imgHSV,Scalar(iLowH,iLowS,iLowV),Scalar(iHighH,iHighS,iHighV),thresholded);
-
-			//this line sets up final_thresh's width and height params to that of thresholded
-			final_thresh = thresholded.clone();
-			noise_reduction(final_thresh,thresholded);
+	
 
 
-			//gather the area and XY center of the centroid/contour
-			oMoments = moments(final_thresh,true);
-			puck_location(warped_display,oMoments, &lastx, &lasty, &lastArea, &posX, &posY);
-			
-			//display the XY coordinates of the puck in real time (according to the warped image)
-			//cout << posX << "\t"<< posY << endl; 
-			setup = 1;
-			sendx = (posX-9.1)*0.368715;
-			sendy = (posY-5.5)*0.345896;
-			//Send coordinates to arm
-			if (FramerCounter % 2 == 0)
+		while (1) {
+			//Get Frame From Camera
+			CLEyeCameraGetFrame(Instance->CameraInstance, CamImg.data);
+
+
+			// DO YOUR IMAGE PROCESSING HERE
+			//after we have the homography; setup==0
+			if (setup >= 1)
 			{
-				//if (sendx > 75)
-					//sendx = 75;
-				//if (sendx < 10)
-					//sendx = 10;
-				if (sendx < 0)
-					sendx = 0;
-				if ((sendy) > 40)
+				//what performs the homography, and warps image to our rectangular "rink"
+				setup = 1;
+				warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
+
+				//flip image around the y axis
+				flip(warped_display, flipped_display, 1);
+				warped_display = flipped_display.clone();
+
+				//this could possible be removed without error in functionality
+				imgHSV = warped_display.clone();
+
+				//apply the HSV to the
+				cvtColor(warped_display, imgHSV, COLOR_BGR2HSV);
+
+				//take a threshold of the image based off of the HSV values
+				inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), thresholded);
+
+				//this line sets up final_thresh's width and height params to that of thresholded
+				final_thresh = thresholded.clone();
+				noise_reduction(final_thresh, thresholded);
+
+
+				//gather the area and XY center of the centroid/contour
+				oMoments = moments(final_thresh, true);
+				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY);
+
+				//display the XY coordinates of the puck in real time (according to the warped image)
+				//cout << posX << "\t"<< posY << endl; 
+				setup = 1;
+				sendx = (posX - 9.1)*0.368715;
+				sendy = (posY - 5.5)*0.345896;
+				//Send coordinates to arm
+				if (FramerCounter % 30 == 0)
 				{
-					moveArm(sendx, 30, &lastQ1, &lastQ2);
+					arm_comm = 1;
+					//if (sendx > 75)
+						//sendx = 75;
+					//if (sendx < 10)
+						//sendx = 10;
+					
+
+					
+					cout <<"Image: "<< sendx << "\t" << sendy << endl;
+
+				}
+
+
+				*(Instance->warped_display) = warped_display;
+
+				*(Instance->binary_display) = final_thresh;
+				setup = 2;
+			}
+
+			//copy it to main thread image.
+			if (setup == 0)
+			{
+				//this can change later
+				circle(CamImg, Point(438, 372), 2, Scalar(255, 0, 255), 2, 8, 0);
+				circle(CamImg, Point(285, 244), 2, Scalar(255, 0, 255), 2, 8, 0);
+				circle(CamImg, Point(434, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
+				//circle(CamImg, Point(463, 385), 2, Scalar(255, 0, 255), 2, 8, 0);
+
+
+			}
+			*(Instance->Frame) = CamImg;
+			//imshow("Camera Feed",CamImg);
+
+			// Track FPS
+			if (FramerCounter == 0) StartTime = clock();
+			FramerCounter++;
+			EndTime = clock();
+			if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
+				cout << "FPS:" << FramerCounter << endl;
+				FramerCounter = 0;
+			}
+		}
+	
+	return 0;
+}
+
+
+//Thread does takes care of all the arm movement
+//communication
+//processing of game logic
+//velocity
+static DWORD WINAPI ArmThread(LPVOID)
+{
+	/*puck and tiva variables*/
+	if (!InitUDPLib())
+	{
+		cout << "UDP Failed" << endl;
+		exit(0);
+	}
+	else {
+		//33.0 -10.0 (x offset , yoffset)
+		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 33.02, -15);
+
+		// instantiate set point for arm
+		Vec_double setPoint;
+
+		setPoint.x = 0;
+		setPoint.y = 0;
+
+		Tiva.moveArm(setPoint, false);
+
+		Vec_double initPos;
+		Vec_double initVel;
+		Vec_double initAcl;
+
+		initPos.x = 30.0;
+		initPos.y = 60.0;
+
+		initVel.x = -0.5;
+		initVel.y = -2.0;
+
+		initAcl.x = -0.0125;
+		initAcl.y = -0.0125;
+
+		double radius = 50.0;
+		double widthCm = 66.0;
+		double heightCm = 136.0;
+		//Puck puck = Puck(initPos, initVel, initAcl, radius, 1.0, widthCm, heightCm);
+
+		//std::vector<Vec_double> trajectory;
+
+		int estimation_size = 60;
+
+		//trajectory = puck.computeTrajectory(puck, estimation_size);
+
+		// Create receiver, with packet size equal to that of PACKIN and port at 12403 or the output port for the Tiva in virtual port 3
+		CUDPReceiver receiver(sizeof(PACKIN), 12403);
+
+		// Create sender, with packet size equal to that of PACKOUT and port at port is 12302 or input port for the Tiva in virtual port 2, 
+		// and remote address 127.0.0.1(localhost)
+		CUDPSender sender(sizeof(PACKOUT), 12302, "127.0.0.1");
+
+		// Define buffers for input and output
+		PACKIN pkin;
+		PACKOUT pkout;
+		char string[256];
+		//float x, y;
+		float q1, q2;// lastQ1, lastQ2;
+		char* pEnd;
+
+		int nRetCode = 0;
+		int userInput = 0;
+
+		//endless loop that will run until program quits
+		//
+		while (1)
+		{
+			if (arm_comm == 1)
+			{
+				if (sendx < 10 && sendx>0)
+					sendx = 10;
+				if (sendy < 15 && sendy >0)
+					sendy = 15;
+				if ((sendy) > 50)
+				{
+					sendy = 45;
+					//moveArm(sendx, 30, &lastQ1, &lastQ2);
+					receiver.GetData(&pkin);
+					setPoint.x = sendx;
+					setPoint.y = sendy;
+					Tiva.moveArm(setPoint, false);
+
+					q1 = (float)Tiva.getMotor1Angle() * (180 / 3.14159265359);
+					q2 = (float)Tiva.getMotor2Angle() * (180 / 3.14159265359);
+
+					cout << "~~~TIVA~~~" << q1 << "," << q2 << endl;
+					// repack the data
+					//Send most up to date information if the value isn't NaN, otherwise use
+					//last good known value
+					if (!isnan(q1) && !isnan(q2) && sendx > 0 && sendy > 0) {
+						pkout.flt1 = q1;
+						pkout.flt2 = q2;
+						lastQ1 = q1;
+						lastQ2 = q2;
+					}
+					else {
+						cout << "NAN ERROR" << endl;
+						pkout.flt1 = lastQ1;
+						pkout.flt2 = lastQ2;
+					}
+					sender.SendData(&pkout);
+
 
 				}
 				else {
-					moveArm(sendx, sendy, &lastQ1, &lastQ2);
+					receiver.GetData(&pkin);
+
+					setPoint.x = sendx;
+					setPoint.y = sendy;
+					Tiva.moveArm(setPoint, false);
+
+					q1 = (float)Tiva.getMotor1Angle() * (180 / 3.14159265359);
+					q2 = (float)Tiva.getMotor2Angle() * (180 / 3.14159265359);
+
+					cout << "~~~TIVA~~~" << q1 << "," << q2 << endl;
+					// repack the data
+					//Send most up to date information if the value isn't NaN, otherwise use
+					//last good known value
+					if (!isnan(q1) && !isnan(q2) && sendx > 0 && sendy > 0) {
+						pkout.flt1 = q1;
+						pkout.flt2 = q2;
+						lastQ1 = q1;
+						lastQ2 = q2;
+					}
+					else {
+						cout << "NAN ERROR" << endl;
+						pkout.flt1 = lastQ1;
+						pkout.flt2 = lastQ2;
+					}
+					//moveArm(sendx, sendy, &lastQ1, &lastQ2);
+					sender.SendData(&pkout);
 				}
-				cout << sendx<< "\t" << sendy<< endl;
-
+				arm_comm = 0;
 			}
-				
-
-			*(Instance->warped_display) = warped_display;
-
-			*(Instance->binary_display) = final_thresh;
-			setup = 2;
-		}
-
-		//copy it to main thread image.
-		if (setup == 0)
-		{
-			//this can change later
-			circle(CamImg, Point(438, 372), 2, Scalar(255, 0, 255), 2, 8, 0);
-			circle(CamImg, Point(285, 244), 2, Scalar(255, 0, 255), 2, 8, 0);
-			circle(CamImg, Point(434, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
-			//circle(CamImg, Point(463, 385), 2, Scalar(255, 0, 255), 2, 8, 0);
-
 
 		}
-		*(Instance->Frame) = CamImg;
-		//imshow("Camera Feed",CamImg);
-
-		// Track FPS
-		if(FramerCounter==0) StartTime=clock();
-		FramerCounter++;
-		EndTime=clock();
-		if((EndTime-StartTime)/CLOCKS_PER_SEC>=1){
-			cout << "FPS:" << FramerCounter << endl;
-			FramerCounter=0;
-		}
+		// Initialize the UDP lib. If failed, quit running.
 	}
-	return 0;
 }
+
+
+
+
+
+
+
 //function that instantiates the trackbars with sliders
 void inst_taskbars(void)
 {
