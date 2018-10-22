@@ -10,8 +10,8 @@ class TivaController
 		// getter methods
 		double getMotor1Angle() const;
 		double getMotor2Angle() const;
-		Vec getArm1Location() const;
-		Vec getArm2Location() const;
+		Comp getArm1Location() const;
+		Comp getArm2Location() const;
 		double getArm1Length() const;
 		double getArm2Length() const;
 		double getxOffset() const;
@@ -28,12 +28,9 @@ class TivaController
 		// arm movement methods
 		void resetArm();
 		void updateArmLocation();
-		void moveArm(Vec point, bool negative);
-		std::tuple<double,double> computeKinematics(Vec point, bool negative);
-
-		// puck methods
-		Vec computeVelocity(Vec init_pos, Vec final_pos, int frames);
-		std::vector<Vec> computeTrajectory(Puck puck, int estimation_size);
+		void moveArm(Comp point, bool negative);
+		static std::vector<Comp> computePath(Comp start, Comp end, int steps);
+		std::tuple<double,double> computeKinematics(Comp point, bool negative);
 
 		// Constructor
 		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, 
@@ -42,8 +39,8 @@ class TivaController
 	private:
 		double q1;
 		double q2;
-		Vec arm1Pos;
-		Vec arm2Pos;
+		Comp arm1Pos;
+		Comp arm2Pos;
 		
 		//double x1;
 		//double y1;

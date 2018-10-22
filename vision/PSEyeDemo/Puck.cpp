@@ -92,18 +92,8 @@ std::vector<Comp> Puck::computeTrajectory(int estimation_size) {
 	std::vector<Comp> trajectory;
 
 	for ( int frame = 0; frame < estimation_size; frame++ ) {
-		// update current position based on velocity
-
 		move();
 		trajectory.push_back(getPosition());
-
-		//current_pos.x = current_pos.x + current_vel.x;
-		//current_pos.y = current_pos.y + current_vel.y;
-		//trajectory.push_back(current_pos);
-
-		// update current velocity based on acceleration
-		//current_vel.x = current_vel.x + accel.x;
-		//current_vel.y = current_vel.x + accel.y;
 	}
 
 	return trajectory;
