@@ -1,10 +1,11 @@
 #include "Puck.h"
+#include <iostream>
 
 // Constructor
-Puck::Puck(Vec initPos, Vec initVel, Vec initAcl, double radius, 
-		   double unitsPerCm, double widthCm, double heightCm) {
-	setPosition(initPos);
-	setVelocity(initVel);
+Puck::Puck(Vec firstPos, Vec secondPos, Vec initAcl, double radius, 
+		   double unitsPerCm, double widthCm, double heightCm, int frames) {
+	setPosition(secondPos);
+	computeVelocity(firstPos, secondPos, frames);
 	setAcceleration(initAcl);
 	setRadius(radius);
 	setUnitsPerCm(unitsPerCm);
@@ -28,22 +29,16 @@ void Puck::setRinkHeightCm(double newRinkHeightCm) {rinkHeight = newRinkHeightCm
 
 void Puck::move() 
 {
-	Vec newPos;
-	Vec newVel;
-
 	// update puck position
-	newPos.x += vel.x;
-	newPos.y += vel.y;
+	pos.x += vel.x;
+	pos.y += vel.y;
 
 	// update puck velocity
-	newVel.x += acl.x;
-	newVel.y += acl.y;
+	vel.x += acl.x;
+	vel.y += acl.y;
 
 	// check puck position for wall collision
 	checkBoundary();
-
-	setPosition(newPos);
-	setVelocity(newVel);
 }
 
 void Puck::checkBoundary()
@@ -85,27 +80,22 @@ void Puck::checkBoundary()
     //}
 }
 
-Vec Puck::computeVelocity(Vec init_pos, Vec final_pos, int frames) {
-
-	Vec vel;
+void Puck::computeVelocity(Vec init_pos, Vec final_pos, int frames) {
 
 	vel.x = (final_pos.x - init_pos.x) / frames;
 	vel.y = (final_pos.y - init_pos.y) / frames;
 
-	return vel;
 }
 
-std::vector<Vec> Puck::computeTrajectory(Puck puck, int estimation_size) {
+std::vector<Vec> Puck::computeTrajectory(int estimation_size) {
 
-	Vec current_pos = puck.getPosition();
-	Vec current_vel = puck.getVelocity();
 	std::vector<Vec> trajectory;
 
 	for ( int frame = 0; frame < estimation_size; frame++ ) {
 		// update current position based on velocity
 
-		puck.move();
-		trajectory.push_back(puck.getPosition());
+		move();
+		trajectory.push_back(getPosition());
 
 		//current_pos.x = current_pos.x + current_vel.x;
 		//current_pos.y = current_pos.y + current_vel.y;

@@ -25,12 +25,12 @@ class Puck
 		// useful methods
 		void move();
 		void checkBoundary();
-		Vec computeVelocity(Vec init_pos, Vec final_pos, int frames);
-		std::vector<Vec> computeTrajectory(Puck puck, int estimation_size);
+		void computeVelocity(Vec init_pos, Vec final_pos, int frames);
+		std::vector<Vec> computeTrajectory(int estimation_size);
 
 		// Constructor
-		Puck(Vec initPos, Vec initVel, Vec initAcl, double radius,
-			 double unitsPerCm, double widthCm, double heightCm);
+		Puck(Vec firstPos, Vec secondPos, Vec initAcl, double radius, 
+		   double unitsPerCm, double widthCm, double heightCm, int frames);
 
 	private:
 		Vec pos;
