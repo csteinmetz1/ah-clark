@@ -1,6 +1,6 @@
 #include <vector>
 
-struct Vec {
+struct Comp {
 	double x;
 	double y;
 };
@@ -9,14 +9,14 @@ class Puck
 {
 	public:
 		// getter methods
-		Vec getPosition() const;
-		Vec getVelocity() const;
-		Vec getAcceleration() const;
+		Comp getPosition() const;
+		Comp getVelocity() const;
+		Comp getAcceleration() const;
 
 		// setter methods
-		void setPosition(Vec newPos);
-		void setVelocity(Vec newVel);
-		void setAcceleration(Vec newAcl);
+		void setPosition(Comp newPos);
+		void setVelocity(Comp newVel);
+		void setAcceleration(Comp newAcl);
 		void setRadius(double newRadius);
 		void setUnitsPerCm(double newUnitsPerCm);
 		void setRinkWidthCm(double newRinkWidthCm);
@@ -25,17 +25,17 @@ class Puck
 		// useful methods
 		void move();
 		void checkBoundary();
-		void computeVelocity(Vec init_pos, Vec final_pos, int frames);
-		std::vector<Vec> computeTrajectory(int estimation_size);
+		void computeVelocity(Comp init_pos, Comp final_pos, int frames);
+		std::vector<Comp> computeTrajectory(int estimation_size);
 
 		// Constructor
-		Puck(Vec firstPos, Vec secondPos, Vec initAcl, double radius, 
+		Puck(Comp firstPos, Comp secondPos, Comp initAcl, double radius, 
 		   double unitsPerCm, double widthCm, double heightCm, int frames);
 
 	private:
-		Vec pos;
-		Vec vel;
-		Vec acl;
+		Comp pos;
+		Comp vel;
+		Comp acl;
 		double unitsPerCm;
 		double radius;
 		double rinkWidth;
