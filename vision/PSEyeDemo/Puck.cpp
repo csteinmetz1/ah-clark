@@ -37,7 +37,7 @@ void Puck::move()
 	vel.x += acl.x;
 	vel.y += acl.y;
 
-	// check puck position for wall collision
+	// check puck position for wall collision *
 	checkBoundary();
 }
 
