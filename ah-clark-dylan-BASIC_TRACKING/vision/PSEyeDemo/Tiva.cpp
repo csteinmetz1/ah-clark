@@ -10,6 +10,8 @@ double TivaController::getArm1Length() const { return a1; }
 double TivaController::getArm2Length() const { return a2; }
 double TivaController::getxOffset() const { return xOffset; }
 double TivaController::getyOffset() const { return yOffset; }
+double TivaController::getxcoord() const { return x_position; };
+double TivaController::getycoord() const { return y_position; };
 
 // setter methods
 void TivaController::setMotor1Angle(double new_q1) { q1 = new_q1; updateArmLocation(); }
@@ -26,6 +28,8 @@ TivaController::TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm,
 	yOffset = unitsPerCm * yOffsetCm;
 	a1 = unitsPerCm * arm1Cm;
 	a2 = unitsPerCm * arm2Cm;
+	x_position = 0.0;
+	y_position = 0.0;
 
 	// initialize arm 
 
@@ -50,6 +54,8 @@ void TivaController::resetArm(void)
 void TivaController::moveArm(Vec_double point, bool negative)
 {
 	std::tuple<double, double> newAngles;
+	x_position = point.x;
+	y_position = point.y;
 	newAngles = computeKinematics(point, negative);
 	setMotor1Angle(std::get<0>(newAngles));
 	setMotor2Angle(std::get<1>(newAngles));
@@ -73,6 +79,12 @@ std::tuple<double, double> TivaController::computeKinematics(Vec_double point, b
 		new_q2 = acos((pow(point.x, 2) + pow(point.y, 2) - pow(a1, 2) - pow(a2, 2)) / (2.0 * a1 * a2));
 		new_q1 = atan2(point.y, point.x) - atan2((a2 * sin(new_q2)), (a1 + (a2 * cos(new_q2))));
 	}
+
+	if (isnan(new_q1) || isnan(new_q2)) {
+		new_q1 = q1;
+		new_q2 = q2;
+	}
+
 	return std::make_tuple(new_q1, new_q2);
 }
 
@@ -82,6 +94,46 @@ void TivaController::updateArmLocation()
 	arm1Pos.y = a1 * sin(q1) + yOffset;
 	arm2Pos.x = arm1Pos.x + (a2 * cos(q1 + q2));
 	arm2Pos.y = arm1Pos.y + (a2 * sin(q1 + q2));
+}
+
+std::vector<Vec_double> TivaController::computePath(Vec_double endPos, int steps) {
+	
+	std::vector<Vec_double> path_points;
+	Vec_double next_point;
+
+	for (int i = 0; i < steps; i++) {
+
+		if (arm2Pos.x > endPos.x) {
+			next_point.x = arm2Pos.x + ((-arm2Pos.x / steps) * i);
+		}
+		else {
+			next_point.x = arm2Pos.x + ((arm2Pos.x / steps) * i);
+		}
+		if (arm2Pos.y > endPos.y) {
+			next_point.y = arm2Pos.y + ((-arm2Pos.y / steps) * i);
+		}
+		else {
+			next_point.y = arm2Pos.y + ((arm2Pos.y / steps) * i);
+		}
+		path_points.push_back(next_point);
+	}
+	std::cout << next_point.x << " " << next_point.y << std::endl;
+	return path_points;
+}
+
+std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double stop, int steps)
+{
+	std::vector<Vec_double> path;
+	Vec_double point;
+
+	for (int i = 0; i <= steps; i++)
+	{
+		point.x = start.x + i * ((stop.x - start.x) / steps);
+		point.y = start.y + i * ((stop.y - start.y) / steps);
+		path.push_back(point);
+	}
+
+	return path;
 }
 
 /*
@@ -116,7 +168,7 @@ int main() {
 
 	double radius = 50.0;
 	double widthCm = 66.0;
-	double heightCm = 136.0;
+	double heightCm = 134.0;
 	Puck puck = Puck(initPos, initVel, initAcl, radius, 1.0, widthCm, heightCm);
 
 	// vector to hold trajectory points

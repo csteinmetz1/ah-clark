@@ -62,10 +62,10 @@
     <ClInclude Include="xPCUDPSock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Puck.h">
+    <ClInclude Include="UDP_setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UDP_setup.h">
+    <ClInclude Include="Puck.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

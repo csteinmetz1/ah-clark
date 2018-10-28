@@ -1,33 +1,41 @@
 ﻿  PSEyeDemo.cpp
 c:\opencv\build\include\opencv2\flann\logger.h(66): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.17134.0\ucrt\stdio.h(208): note: see declaration of 'fopen'
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(149): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(153): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(150): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(154): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(151): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(155): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(313): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(317): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
           ]
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(282): warning C4101: 'dM10': unreferenced local variable
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(283): warning C4101: 'dArea': unreferenced local variable
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(281): warning C4101: 'dM01': unreferenced local variable
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(477): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(478): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(506): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(507): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(450): warning C4101: 'string': unreferenced local variable
-c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(453): warning C4101: 'pEnd': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(287): warning C4101: 'dM10': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(288): warning C4101: 'dArea': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(286): warning C4101: 'dM01': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(510): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(511): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(564): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(565): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(573): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(574): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(473): warning C4101: 'string': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(476): warning C4101: 'pEnd': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(484): warning C4101: 'i': unreferenced local variable
+c:\users\dylan\desktop\seniordesign_software\ah-clark\ah-clark-dylan-basic_tracking\vision\pseyedemo\pseyedemo.cpp(479): warning C4101: 'velocity': unreferenced local variable
+  Generating Code...
+  Skipping... (no relevant changes detected)
+  Homography.cpp
+  CameraControl.cpp
   PSEyeDemo.vcxproj -> C:\Users\Dylan\Desktop\seniordesign_software\ah-clark\ah-clark-dylan-BASIC_TRACKING\vision\Debug\PSEyeDemo.exe

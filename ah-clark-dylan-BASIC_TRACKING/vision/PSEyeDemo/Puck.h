@@ -1,3 +1,4 @@
+
 #include <vector>
 
 struct Vec_double {
@@ -25,12 +26,12 @@ public:
 	// useful methods
 	void move();
 	void checkBoundary();
-	Vec_double computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames);
-	std::vector<Vec_double> computeTrajectory(Puck puck, int estimation_size);
+	void computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames);
+	std::vector<Vec_double> computeTrajectory(int estimation_size);
 
 	// Constructor
-	Puck(Vec_double initPos, Vec_double initVel, Vec_double initAcl, double radius,
-		double unitsPerCm, double widthCm, double heightCm);
+	Puck(Vec_double initPos, Vec_double secondPos, Vec_double initAcl, double radius,
+		double unitsPerCm, double widthCm, double heightCm, int frames);
 
 private:
 	Vec_double pos;

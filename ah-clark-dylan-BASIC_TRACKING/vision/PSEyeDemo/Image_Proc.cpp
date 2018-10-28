@@ -17,7 +17,7 @@ void noise_reduction(Mat dest, Mat source)
 
 }
 
-void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY)
+void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found)
 {
 
 	double change_amt = 60.0;				//puck location will not update unless it moves within bounds set by change_amt
@@ -36,10 +36,12 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 	//to avoid reading noise, only update the puck image under and over a specific area size
 	if (dArea > 50 && dArea < 500)
 	{
+		*puck_found = 1;
+
 		*posX = dM10 / dArea;
 		*posY = dM01 / dArea;
 		//detect the puck and start anew
-		if (*lastx == -1.0 && *lasty == -1.0)
+		if (*lastx == -1 || *lasty == -1)
 		{
 			*lastx = *posX;
 			*lasty = *posY;
@@ -73,9 +75,10 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 	}
 	else
 	{
-		*lastx = -1.0;
-		*lasty = -1.0;
-		*posX = -1.0;
-		*posY = -1.0;
+		puck_found = 0;
+		*lastx = -1;
+		*lasty = -1;
+		*posX = -1;
+		*posY = -1;
 	}
 }
