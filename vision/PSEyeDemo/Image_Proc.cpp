@@ -20,7 +20,8 @@ void noise_reduction(Mat dest, Mat source)
 void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found)
 {
 
-	double change_amt = 60.0;				//puck location will not update unless it moves within bounds set by change_amt
+	// puck location will not update unless it moves within bounds set by change_amt - this needs to be tested
+	double change_amt = 60.0;
 	int circle_rad = 0;
 	double dM01;
 	double dM10;
@@ -40,7 +41,7 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 
 		*posX = dM10 / dArea;
 		*posY = dM01 / dArea;
-		//detect the puck and start anew
+		// detect the puck and start anew
 		if (*lastx == -1 || *lasty == -1)
 		{
 			*lastx = *posX;
@@ -60,18 +61,15 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 			*posY = *lasty;
 			dArea = *lastArea;
 		}
-
-		//stuff if there is a acceptable difference in the last and current then we change the last if ()
+		// stuff if there is a acceptable difference in the last and current then we change the last if ()
 		circle_rad = dArea / 10;
 
-		//display a circle around the centroid of the puck.
+		// display a circle around the centroid of the puck.
 		circle(dest, Point(*posX, *posY), circle_rad % 100, Scalar(255, 0, 255), 2, 8, 0);
 
 		*lastArea = dArea;
 		*lastx = *posX;
 		*lasty = *posY;
-
-
 	}
 	else
 	{
