@@ -37,23 +37,22 @@ typedef struct{
 	Mat *binary_display;
 } CAMERA_AND_FRAME;
 
-static DWORD WINAPI CaptureThread(LPVOID ThreadPointer);
+static DWORD WINAPI CaptureThread(LPVOID ThreadPointer); // ah this is how you get data back and forth between threads 
 static DWORD WINAPI ArmThread(LPVOID);
 void inst_taskbars(void);
 
 //////////////////////////////////////////////////
-// default camera values
+// default segmentation values
 //////////////////////////////////////////////////
-int iLowH = 42;				//Hue
+int iLowH = 42;				// Hue
 int iHighH = 92;
-int iLowS = 40;				//Saturation
+int iLowS = 40;				// Saturation
 int iHighS = 255;
-int iLowV = 0;				//Value
+int iLowV = 0;				// Value
 int iHighV = 255;
 int gain = 0;
 int exposure = 180;
 //////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////
 // Globals - these need to be cleaned up
@@ -67,22 +66,18 @@ int setup;					// Variable that tells us which state we are in
 							// variables help communicate data between the arm and image proc threads
 double sendx;
 double sendy;
-double sendx2;
-double sendy2;
-float lastQ1 = 0;
-float lastQ2 = 0;
 
 int arm_comm = 0;
 int frame_number;
 //////////////////////////////////////////////////
 
-/*main function that ties everything together, threads and camera functionality will be initiated here*/
+// main function that ties everything together, threads and camera functionality will be initiated here
 int _tmain(int argc, _TCHAR* argv[])
 {
 	int Width,Height;
 	int KeyPress;
 	setup = 0;
-	CLEyeCameraInstance EyeCamera=NULL;
+	CLEyeCameraInstance EyeCamera = NULL;
 
 	Mat Frame;						// camera's native perspective
 	Mat warped_display;				// camera perspective after the homography is applied
@@ -91,7 +86,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	CAMERA_AND_FRAME ThreadPointer;
 	HANDLE _hThread;
 	CLEyeCameraParameter CamCurrentParam=(CLEyeCameraParameter)0;
-	bool CamParam=0;
+	bool CamParam = 0;
 
 	Point2fVector points;			//vector that holds the mouse click coordinates from setup image
 	//////////////////////
@@ -120,18 +115,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	ThreadPointer.binary_display = &binary_display;
 	ThreadPointer.Threshold=0;
 
-	// Launch thread and confirm its running
+	// Launch threads and confirm they are running running
 	_hThread = CreateThread(NULL, 0, &CaptureThread, &ThreadPointer, 0, 0);
 	if(_hThread == NULL)
 	{
-		printf("Failed to create thread...");
+		printf("Failed to create Vision thread...");
 		getchar();
 		return false;
 	}
 	_hThread = CreateThread(NULL, 0, &ArmThread, NULL, 0, 0);
 	if (_hThread == NULL)
 	{
-		printf("Failed to create thread...");
+		printf("Failed to create Arm Control thread...");
 		getchar();
 		return false;
 	}
@@ -145,8 +140,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	points2.push_back(Point2f(0.0, 0.0));
 
 	//main loop that runs during camera feed operation and 
-	while( 1 ) {
-
+	while(1) {
 		//This will capture keypresses and do whatever you want if you assign the appropriate actions to the right key code
 		KeyPress = waitKey(1);
 		switch (KeyPress){
@@ -158,7 +152,6 @@ int _tmain(int argc, _TCHAR* argv[])
 				     //more different conditionals involving the setup variable.
 				setup_img = Frame.clone();
 				 
-
 				//uncomment to test the coordinates
 				//imshow("initial image", setup_img);
 				/*MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
@@ -200,7 +193,6 @@ int _tmain(int argc, _TCHAR* argv[])
 				//slider bars for adjusting the hue, saturation, and value settings
 				//control will be the name of the window
 				inst_taskbars();
-
 
 				setup = 1;
 				KeyPress = 0;

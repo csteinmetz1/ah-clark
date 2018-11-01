@@ -20,8 +20,8 @@ void noise_reduction(Mat dest, Mat source)
 void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found)
 {
 
-	// puck location will not update unless it moves within bounds set by change_amt - this needs to be tested
-	double change_amt = 60.0;
+	// puck location will not update unless it moves within bounds set by change_amt 
+	double change_amt = 60.0; // how is this value determined
 	int circle_rad = 0;
 	double dM01;
 	double dM10;
