@@ -15,66 +15,28 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CameraControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PSEyeDemo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UDP_FullDuplexS9.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Tiva.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Homography.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Image_Proc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Puck.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CameraControl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Tiva.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Homography.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Image_Proc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="xPCUDPSock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UDP_setup.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Puck.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="PSEyeDemo.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>
