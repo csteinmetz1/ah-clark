@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "Tiva.h"
 
 // getter methods
@@ -103,7 +104,8 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 	return path;
 }
 
-/*
+//////////////////////////////////////////////////////////
+/* this is an example of how to use the class
 int main() {
 
 	// instaniate Tiva object
