@@ -1,6 +1,9 @@
+#ifndef PUCK_H
+#define PUCK_H
+
 #include <vector>
 
-struct Comp {
+struct Vec_double {
 	double x;
 	double y;
 };
@@ -9,14 +12,14 @@ class Puck
 {
 	public:
 		// getter methods
-		Comp getPosition() const;
-		Comp getVelocity() const;
-		Comp getAcceleration() const;
+		Vec_double getPosition() const;
+		Vec_double getVelocity() const;
+		Vec_double getAcceleration() const;
 
 		// setter methods
-		void setPosition(Comp newPos);
-		void setVelocity(Comp newVel);
-		void setAcceleration(Comp newAcl);
+		void setPosition(Vec_double newPos);
+		void setVelocity(Vec_double newVel);
+		void setAcceleration(Vec_double newAcl);
 		void setRadius(double newRadius);
 		void setUnitsPerCm(double newUnitsPerCm);
 		void setRinkWidthCm(double newRinkWidthCm);
@@ -25,19 +28,21 @@ class Puck
 		// useful methods
 		void move();
 		void checkBoundary();
-		void computeVelocity(Comp init_pos, Comp final_pos, int frames);
-		std::vector<Comp> computeTrajectory(int estimation_size);
+		void computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames);
+		std::vector<Vec_double> computeTrajectory(int estimation_size);
 
 		// Constructor
-		Puck(Comp firstPos, Comp secondPos, Comp initAcl, double radius, 
+		Puck(Vec_double firstPos, Vec_double secondPos, Vec_double initAcl, double radius, 
 		   double unitsPerCm, double widthCm, double heightCm, int frames);
 
 	private:
-		Comp pos;
-		Comp vel;
-		Comp acl;
+		Vec_double pos;
+		Vec_double vel;
+		Vec_double acl;
 		double unitsPerCm;
 		double radius;
 		double rinkWidth;
 		double rinkHeight;
 };
+
+#endif

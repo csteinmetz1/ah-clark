@@ -1,3 +1,6 @@
+#ifndef TIVA_H
+#define TIVA_H
+
 #include <tuple>
 #include <string>
 #include <iostream> 
@@ -8,18 +11,22 @@ class TivaController
 {
 	public:
 		// getter methods
-		double getMotor1Angle() const;
-		double getMotor2Angle() const;
-		Comp getArm1Location() const;
-		Comp getArm2Location() const;
+		double getMotor1AngleRadians() const;
+		double getMotor2AngleRadians() const;
+		double getMotor1AngleDegrees() const;
+		double getMotor2AngleDegrees() const;
+		Vec_double getArm1Location() const;
+		Vec_double getArm2Location() const;
 		double getArm1Length() const;
 		double getArm2Length() const;
 		double getxOffset() const;
 		double getyOffset() const;
 
 		// setter methods
-		void setMotor1Angle(double new_q1);
-		void setMotor2Angle(double new_q2);
+		void setMotor1AngleRadians(double new_q1);
+		void setMotor2AngleRadians(double new_q2);
+		void setMotor1AngleDegrees(double new_q1);
+		void setMotor2AngleDegrees(double new_q2);
 		void setXOffsetCm(double new_xOffsetCm);
 		void setYOffsetCm(double new_yOffsetCm);
 		void setArm1Cm(double new_arm1Cm);
@@ -28,28 +35,24 @@ class TivaController
 		// arm movement methods
 		void resetArm();
 		void updateArmLocation();
-		void moveArm(Comp point, bool negative);
-		static std::vector<Comp> computePath(Comp start, Comp end, int steps);
-		std::tuple<double,double> computeKinematics(Comp point, bool negative);
+		void moveArm(Vec_double point, bool negative);
+		static std::vector<Vec_double> computePath(Vec_double start, Vec_double end, int steps);
+		std::tuple<double,double> computeKinematics(Vec_double point, bool negative);
 
 		// Constructor
-		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, 
-					   double xOffsetCm, double yOffsetCm);
+		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, double xOffsetCm, double yOffsetCm);
 	
 	private:
 		double q1;
 		double q2;
-		Comp arm1Pos;
-		Comp arm2Pos;
+		Vec_double arm1Pos;
+		Vec_double arm2Pos;
 		
-		//double x1;
-		//double y1;
-		//double x2;
-		//double y2;
-
 		double unitsPerCm;
 		double xOffset;
 		double yOffset;
 		double a1;
 		double a2;
 };
+
+#endif

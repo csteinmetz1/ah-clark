@@ -2,7 +2,7 @@
 #include <iostream>
 
 // Constructor
-Puck::Puck(Comp firstPos, Comp secondPos, Comp initAcl, double radius, 
+Puck::Puck(Vec_double firstPos, Vec_double secondPos, Vec_double initAcl, double radius, 
 		   double unitsPerCm, double widthCm, double heightCm, int frames) {
 	setPosition(secondPos);
 	computeVelocity(firstPos, secondPos, frames);
@@ -14,14 +14,14 @@ Puck::Puck(Comp firstPos, Comp secondPos, Comp initAcl, double radius,
 }
 
 // getter methods
-Comp Puck::getPosition() const {return pos;}
-Comp Puck::getVelocity() const {return vel;}
-Comp Puck::getAcceleration() const {return acl;}
+Vec_double Puck::getPosition() const {return pos;}
+Vec_double Puck::getVelocity() const {return vel;}
+Vec_double Puck::getAcceleration() const {return acl;}
 
 // setter methods
-void Puck::setPosition(Comp newPos) {pos = newPos;}
-void Puck::setVelocity(Comp newVel) {vel = newVel;}
-void Puck::setAcceleration(Comp newAcl) {acl = newAcl;}
+void Puck::setPosition(Vec_double newPos) {pos = newPos;}
+void Puck::setVelocity(Vec_double newVel) {vel = newVel;}
+void Puck::setAcceleration(Vec_double newAcl) {acl = newAcl;}
 void Puck::setRadius(double newRadius) {radius = newRadius;}
 void Puck::setUnitsPerCm(double newUnitsPerCm) {unitsPerCm = newUnitsPerCm;}
 void Puck::setRinkWidthCm(double newRinkWidthCm) {rinkWidth = newRinkWidthCm * unitsPerCm;}
@@ -80,16 +80,16 @@ void Puck::checkBoundary()
     //}
 }
 
-void Puck::computeVelocity(Comp init_pos, Comp final_pos, int frames) {
+void Puck::computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames) {
 
 	vel.x = (final_pos.x - init_pos.x) / frames;
 	vel.y = (final_pos.y - init_pos.y) / frames;
 
 }
 
-std::vector<Comp> Puck::computeTrajectory(int estimation_size) {
+std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) {
 
-	std::vector<Comp> trajectory;
+	std::vector<Vec_double> trajectory;
 
 	for ( int frame = 0; frame < estimation_size; frame++ ) {
 		move();
