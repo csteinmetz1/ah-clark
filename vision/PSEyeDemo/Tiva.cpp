@@ -23,6 +23,7 @@ void TivaController::setYOffsetCm(double new_yOffsetCm) {xOffset = new_yOffsetCm
 void TivaController::setArm1Cm(double new_arm1Cm) {a1 = new_arm1Cm * unitsPerCm;}
 void TivaController::setArm2Cm(double new_arm2Cm) {a2 = new_arm2Cm * unitsPerCm;}
 
+
 TivaController::TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, double xOffsetCm, double yOffsetCm)
 {
 	unitsPerCm = _unitsPerCm;
@@ -35,12 +36,13 @@ TivaController::TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm,
 	resetArm();
 };
 
-void TivaController::resetArm(void) 
+void TivaController::resetArm(void)
 {
 	setMotor1AngleRadians(0.0);
 	setMotor2AngleRadians(0.0);
 	updateArmLocation();
 };
+
 
 void TivaController::moveArm(Vec_double point, bool negative) 
 {
@@ -60,18 +62,23 @@ std::tuple<double,double> TivaController::computeKinematics(Vec_double point, bo
 
 	if (negative) // negative q2 solution
 	{
-		new_q2 = -(acos(((pow(point.x,2) + pow(point.y,2) - pow(a1,2) - pow(a2,2)) / (2.0 * a1 * a2))));
-		new_q1 = atan2(point.y, point.x) - atan2((a2 * sin(new_q2)), (a1 + (a2 * cos(new_q2))));
+		new_q2 = -(acos(((pow(point.x, 2) + pow(point.y, 2) - pow(a1, 2) - pow(a2, 2)) / (2.0 * a1 * a2))));
+		new_q1 =   atan2(point.y, point.x) - atan2((a2 * sin(new_q2)), (a1 + (a2 * cos(new_q2))));
 	}
 	else 		 // positive q2 solution
 	{
-		new_q2 =  acos( (pow(point.x,2) + pow(point.y,2) - pow(a1,2) - pow(a2,2)) / (2.0 * a1 * a2) );
+		new_q2 = acos((pow(point.x, 2) + pow(point.y, 2) - pow(a1, 2) - pow(a2, 2)) / (2.0 * a1 * a2));
 		new_q1 = atan2(point.y, point.x) - atan2((a2 * sin(new_q2)), (a1 + (a2 * cos(new_q2))));
+	}
+  // check if solution is valid arm location
+	if (isnan(new_q1) || isnan(new_q2)) {
+		new_q1 = q1;
+		new_q2 = q2;
 	}
 	return std::make_tuple(new_q1, new_q2);
 }
 
-void TivaController::updateArmLocation() 
+void TivaController::updateArmLocation()
 {
 	arm1Pos.x = a1 * cos(q1) + xOffset;
 	arm1Pos.y = a1 * sin(q1) + yOffset;
@@ -82,8 +89,8 @@ void TivaController::updateArmLocation()
 std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double stop, int steps=-1)
 {
 	std::vector<Vec_double> path; // vector of points on linear path
-	Vec_double point;				// point struct
-	double distance;		// distance of path
+	Vec_double point;				      // point struct
+	double distance;		          // distance of path
 
 	// if no step size is given calculate based on distance
 	if (steps == -1) { 
@@ -91,21 +98,19 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 		distance = sqrt(pow(stop.x - start.x, 2) + pow(stop.y - start.y, 2));
 		steps = floor(distance) + 1;
 	}
-
-	std::cout << steps << std::endl;
 	
 	for (int i = 0; i <= steps; i++)
 	{
 		point.x = start.x + i * ( (stop.x - start.x) / steps);
 		point.y = start.y + i * ( (stop.y - start.y) / steps);
 		path.push_back(point);
-	}
-
+  }
 	return path;
 }
 
 //////////////////////////////////////////////////////////
 /* this is an example of how to use the class
+
 int main() {
 
 	// instaniate Tiva object
@@ -113,6 +118,7 @@ int main() {
 
 	// instantiate set point for arm
 	Vec_double setPoint;
+
 	setPoint.x = 25;
 	setPoint.y = 30;
 
@@ -145,7 +151,7 @@ int main() {
 	// vector to hold trajectory points
 	std::vector<Vec_double> trajectory;
 
-	// vector to hold path points
+// vector to hold path points
 	std::vector<Vec_double> path;
 
 	int estimation_size = 60;
@@ -167,6 +173,6 @@ int main() {
 	}
 
 	return 0;
-
 }
 */
+

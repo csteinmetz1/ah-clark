@@ -34,10 +34,6 @@ void Puck::move()
 	pos.x += vel.x;
 	pos.y += vel.y;
 
-	// update puck velocity
-	vel.x += acl.x;
-	vel.y += acl.y;
-
 	// check puck position for wall collision *
 	checkBoundary();
 }
@@ -45,40 +41,40 @@ void Puck::move()
 void Puck::checkBoundary()
 {
 	// right wall
-	if 	    (pos.x + radius < 0.0) 
+	if (pos.x + radius < 0.0)
 	{
 		pos.x = 0.0 + radius;
-		vel.x = -vel.x;
-	} 
+		vel.x = -1.0 * vel.x;
+	}
 	// left wall
 	else if (pos.x + radius > rinkWidth)
 	{
 		pos.x = rinkWidth - radius;
-		vel.x = -vel.x;
+		vel.x = -1.0 * vel.x;
 	}
 	// bottom wall
-	else if (pos.y + radius < 0.0){
+	else if (pos.y + radius < 0.0) {
 		pos.y = 0.0 + radius;
-		vel.y = -vel.y;
+		vel.y = -1.0 * vel.y;
 	}
 	// top wall
 	else if (pos.y + radius > rinkHeight)
 	{
 		pos.y = rinkHeight - radius;
-		vel.y = -vel.y;
+		vel.y = -1.0 * vel.y;
 	}
 	// our goal
 	//else if (pos.y + radius > rinkHeight & pos.x < )
 	//{
-    //		pos.y = rinkHeight - radius;
+  //	pos.y = rinkHeight - radius;
 	//	vel.y = -vel.y;
 	//}
 	// opponent goal
 	//else if (pos.y + radius > rinkHeight)
 	//{
 	//	pos.y = rinkHeight - radius;
-    //	vel.y = -vel.y;
-    //}
+  //	vel.y = -vel.y;
+  //}
 }
 
 void Puck::computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames) {
@@ -91,11 +87,10 @@ void Puck::computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames
 std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) {
 
 	std::vector<Vec_double> trajectory;
-
 	for ( int frame = 0; frame < estimation_size; frame++ ) {
 		move();
 		trajectory.push_back(getPosition());
 	}
-
 	return trajectory;
 }
+
