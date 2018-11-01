@@ -8,7 +8,7 @@ void noise_reduction(Mat dest, Mat source)
 	Mat ed1, ed2;
 	
 	//erode and dialate to capture the contour of the puck and eliminate noise
-	erode(source, ed1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+	erode(source, ed1, getStructuringElement(MORPH_ELLIPSE, Size(4, 4)));
 	dilate(ed1, ed2, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 	//final_thresh = thresholded.clone();
 
@@ -17,10 +17,10 @@ void noise_reduction(Mat dest, Mat source)
 
 }
 
-void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY)
+void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found)
 {
 
-	double change_amt = 30.0;				//puck location will not update unless it moves within bounds set by change_amt
+	double change_amt = 60.0;				//puck location will not update unless it moves within bounds set by change_amt
 	int circle_rad = 0;
 	double dM01;
 	double dM10;
@@ -34,12 +34,14 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 	//gather the area and XY center of the centroid/contour
 
 	//to avoid reading noise, only update the puck image under and over a specific area size
-	if (dArea > 115 && dArea < 500)
+	if (dArea > 50 && dArea < 500)
 	{
+		*puck_found = 1;
+
 		*posX = dM10 / dArea;
 		*posY = dM01 / dArea;
 		//detect the puck and start anew
-		if (*lastx == -1.0 && *lasty == -1.0)
+		if (*lastx == -1 || *lasty == -1)
 		{
 			*lastx = *posX;
 			*lasty = *posY;
@@ -73,9 +75,10 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 	}
 	else
 	{
-		*lastx = -1.0;
-		*lasty = -1.0;
-		*posX = -1.0;
-		*posY = -1.0;
+		puck_found = 0;
+		*lastx = -1;
+		*lasty = -1;
+		*posX = -1;
+		*posY = -1;
 	}
 }
