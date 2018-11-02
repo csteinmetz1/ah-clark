@@ -1,0 +1,15 @@
+﻿  Tiva.cpp
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(37): warning C4101: 'arm2Pos': unreferenced local variable
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(36): warning C4101: 'arm1Pos': unreferenced local variable
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(99): error C2511: 'std::vector<Vec_double,std::allocator<_Ty>> TivaController::computePath(Vec_double,int)': overloaded member function not found in 'TivaController'
+          with
+          [
+              _Ty=Vec_double
+          ]
+  c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.h(9): note: see declaration of 'TivaController'
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(106): error C2228: left of '.x' must have class/struct/union
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(107): error C2228: left of '.x' must have class/struct/union
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(110): error C2228: left of '.x' must have class/struct/union
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(112): error C2228: left of '.y' must have class/struct/union
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(113): error C2228: left of '.y' must have class/struct/union
+c:\users\eddie\dropbox\documents\senior design 2\visual studio\basic_xy\udp_fullduplexs9\udp_fullduplexs9\tiva.cpp(116): error C2228: left of '.y' must have class/struct/union
