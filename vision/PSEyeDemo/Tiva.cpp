@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Tiva.h"
 
 // getter methods
@@ -88,15 +87,15 @@ void TivaController::updateArmLocation()
 
 std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double stop, int steps=-1)
 {
-	std::vector<Vec_double> path; // vector of points on linear path
-	Vec_double point;				      // point struct
-	double distance;		          // distance of path
+	std::vector<Vec_double> path; 		// vector of points on linear path
+	Vec_double point;				    // point struct
+	double distance;		          	// distance of path
 
 	// if no step size is given calculate based on distance
 	if (steps == -1) { 
 		// compute distance to new point
 		distance = sqrt(pow(stop.x - start.x, 2) + pow(stop.y - start.y, 2));
-		steps = floor(distance) + 1;
+		steps = 2 * (floor(distance) + 1);
 	}
 	
 	for (int i = 0; i <= steps; i++)
@@ -104,12 +103,68 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 		point.x = start.x + i * ( (stop.x - start.x) / steps);
 		point.y = start.y + i * ( (stop.y - start.y) / steps);
 		path.push_back(point);
-  }
+  	}
 	return path;
 }
 
+std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, 
+													   double yhit=30, double xlim=10, double ylim=10, int steps=50)
+{
+	Vec_double hitPoint;
+
+	// find point at which to hit the puck
+	for (auto point : trajectory) {
+		if (point.y < yhit) {
+			hitPoint.x = point.x;
+			hitPoint.y = point.y;
+			break;
+		}
+	}
+
+	double slope; 			  // slope of the line connecting puck hit point and puck target point
+	Vec_double hitStartPoint; // start point of the hit path which is behind the puck aimed at the target
+	Vec_double hitEndPoint;   // end point of the hit path which is past the puck on the line towards the target
+
+	slope = (targetPoint.y - hitPoint.y)  / (targetPoint.x - hitPoint.x);
+
+	std::cout << slope << std::endl;
+
+	if (slope < 0) // negative slope 
+	{
+		hitStartPoint.x = 66.0 - xlim;
+		hitStartPoint.y = slope * (66.0 - xlim - hitPoint.x) + hitPoint.y;
+
+		if (hitStartPoint.y < ylim) // check if y value is valid
+		{
+			hitStartPoint.y = ylim;
+			hitStartPoint.x = (ylim - hitPoint.y) + hitPoint.x;
+		}
+	}
+	else  // positive slope
+	{
+		hitStartPoint.x = xlim;
+		hitStartPoint.y = slope * (xlim - hitPoint.x) + hitPoint.y;
+
+		if (hitStartPoint.y < ylim) // check if y value is valid
+		{
+			hitStartPoint.y = ylim;
+			hitStartPoint.x = ( (ylim - hitPoint.y) / slope ) + hitPoint.x;
+		}
+	}
+
+	hitEndPoint.x = hitPoint.x - (hitPoint.x - targetPoint.x) * 0.15; 
+	hitEndPoint.y = slope * (hitEndPoint.x - hitPoint.x) + hitPoint.y;	
+
+	std::vector<Vec_double> hitPath; // total path from start point behind puck to point past the puck towards target
+									 // Note: make sure to move the arm to the start point with a path first
+
+	hitPath = computePath(hitStartPoint, hitEndPoint, steps);
+
+	return hitPath;
+}
+
 //////////////////////////////////////////////////////////
-/* this is an example of how to use the class
+/* this is an example of how to use the class 
 
 int main() {
 
@@ -151,25 +206,32 @@ int main() {
 	// vector to hold trajectory points
 	std::vector<Vec_double> trajectory;
 
-// vector to hold path points
+	// vector to hold path points
 	std::vector<Vec_double> path;
+	trajectory = puck.computeTrajectory(60);
 
-	int estimation_size = 60;
+	// Now let's hit a puck
+	std::vector<Vec_double> initPath;
+	std::vector<Vec_double> hitPath;
 
-	trajectory = puck.computeTrajectory(estimation_size);
+	// Define target - the center of the goal
+	Vec_double targetPoint;
+	targetPoint.x = 33.0;
+	targetPoint.y = 136.0;
 
-	for (auto current_pos : trajectory)
-	{
-		if (current_pos.y < 35) {
-    		std::cout << "Target x: " << current_pos.x << " y: " << current_pos.y << std::endl;
-			path = Tiva.computePath(Tiva.getArm2Location(), current_pos);
-			break;
-		}
+	hitPath = Tiva.computeHitPath(trajectory, targetPoint);
+	initPath = Tiva.computePath(Tiva.getArm2Location(), hitPath.front(), 50);
+
+	std::cout << "init path" << std::endl;
+
+	for (auto point : initPath) {
+		std::cout << point.x << " " << point.y << std::endl;
 	}
 
-	for (auto point : path) 
-	{
-		std::cout << "x: " << point.x << " y: " << point.y << std::endl;
+	std::cout << "hit path" << std::endl;
+
+	for (auto point : hitPath) {
+		std::cout << point.x << " " << point.y << std::endl;
 	}
 
 	return 0;
