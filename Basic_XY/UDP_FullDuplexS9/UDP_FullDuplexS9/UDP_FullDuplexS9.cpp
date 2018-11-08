@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string>
 #include "Tiva.h"
+#include "Draw.h"
+#include <ctime>
 
 #pragma pack(push,1) // Important! Tell the compiler to pack things up tightly 
 
@@ -55,14 +57,23 @@ int _tmain(int argc, TCHAR* argv[])
 		PACKOUT pkout;
 		char string[256];
 		float x, y;
+		float radius;
 		float q1, q2;
 		char* pEnd;
-		TivaController Tiva = TivaController(1.0, 46.8313, 25.4, 33.02, -26.67);
+		TivaController Tiva = TivaController(1.0, 46.8313, 25.4, 31.5, -23.25);
 		Tiva.resetArm();
+
+		std::vector<Vec_double> path;
+		Vec_double home;
+		home.x = 33;
+		home.y = 20;
+
+		int initPos = 1;
+		std::vector<Vec_double> setupPath;
+
 		// Routing data endlessly
 		while (1)
 		{
-
 			printf("Enter x: ");
 			fgets(string, 100, stdin);
 			x = strtof(string, &pEnd);
@@ -71,25 +82,83 @@ int _tmain(int argc, TCHAR* argv[])
 			fgets(string, 100, stdin);
 			y = strtof(string, &pEnd);
 			printf("\n");
-			// prevent from running to fast
+
+			Vec_double targetPoint;
+			targetPoint.x = x;
+			targetPoint.y = y;
+
+			if (initPos == 1)
+			{
+				setupPath = Tiva.computePath(Tiva.getArm2Location(), home, 1000);
+				for (auto point : setupPath)
+				{
+
+					receiver.GetData(&pkin);
+
+					Tiva.moveArm(point, false);
+
+					q1 = (float)Tiva.getMotor1AngleDegrees();
+					q2 = (float)Tiva.getMotor2AngleDegrees();
+
+					// repack the data
+					pkout.flt1 = q1;
+					pkout.flt2 = q2;
+
+					//std::cout << q1 << std::endl;
+					//std::cout << q2 << std::endl;
+					std::cout << point.x << " " << point.y << std::endl;
+
+					// send the repacked data through sender
+					sender.SendData(&pkout);
+					Sleep(1);
+				}
+				initPos = 0;
+			}
+
+			//
+			Vec_double initPos;
+			Vec_double secondPos;
+			Vec_double initAcl;
+			initPos.x = 33.0;
+			initPos.y = 100.0;
+			secondPos.x = 38.5;
+			secondPos.y = 85.0;
+			int frames = 10;
+			initAcl.x = 0;
+			initAcl.y = 0;
+			double radius = 0.0;
+			double widthCm = 66.0;
+			double heightCm = 136.0;
+			Puck puck = Puck(initPos, secondPos, initAcl, radius, 1.0, widthCm, heightCm, frames);
+
+			clock_t startTime, endTime;
+			// vector to hold trajectory points
+			std::vector<Vec_double> trajectory;
+			// vector to hold path points
+			std::vector<Vec_double> path;
+			trajectory = puck.computeTrajectory(60);
+			// Now let's hit a puck
+			std::vector<Vec_double> initPath;
+			std::vector<Vec_double> hitPath;
+			// Define target - the center of the goal
+			hitPath = Tiva.computeHitPath(trajectory, targetPoint,20, 10, 10, 125);
+			initPath = Tiva.computePath(Tiva.getArm2Location(), hitPath.front(), 500);
+			//
+
+
+			// preent from running to fast
 			Sleep(1);
 			// get latest data from receiver
-			receiver.GetData(&pkin);
 
-			Vec_double setPoint;
-			setPoint.x = x;
-			setPoint.y = y;
+			for (auto point : initPath) 
+			{
 
-			std::vector<Vec_double> path;
-
-			path = Tiva.computePath(Tiva.getArm2Location(), setPoint, 50);
-
-			for (auto point : path) {
+				receiver.GetData(&pkin);
 
 				Tiva.moveArm(point, false);
 
-				q1 = (float)Tiva.getMotor1Angle() * (180 / 3.14159265359);
-				q2 = (float)Tiva.getMotor2Angle() * (180 / 3.14159265359);
+				q1 = (float)Tiva.getMotor1AngleDegrees();
+				q2 = (float)Tiva.getMotor2AngleDegrees();
 
 				// repack the data
 				pkout.flt1 = q1;
@@ -97,12 +166,36 @@ int _tmain(int argc, TCHAR* argv[])
 
 				//std::cout << q1 << std::endl;
 				//std::cout << q2 << std::endl;
-				//std::cout << point.x << " " << point.y << std::endl;
+				std::cout << point.x << " " << point.y << std::endl;
 
 				// send the repacked data through sender
 				sender.SendData(&pkout);
 				Sleep(1);
 			}
+			startTime = clock();
+			for (auto point : hitPath)
+			{
+				receiver.GetData(&pkin);
+
+				Tiva.moveArm(point, false);
+
+				q1 = (float)Tiva.getMotor1AngleDegrees();
+				q2 = (float)Tiva.getMotor2AngleDegrees();
+
+				// repack the data
+				pkout.flt1 = q1;
+				pkout.flt2 = q2;
+
+				//std::cout << q1 << std::endl;
+				//std::cout << q2 << std::endl;
+				std::cout << point.x << " " << point.y << std::endl;
+
+				// send the repacked data through sender
+				sender.SendData(&pkout);
+				Sleep(1);
+			}
+			endTime = clock();
+			std::cout << "Hit puck timing: " << ((double)(endTime - startTime) / CLOCKS_PER_SEC) << std::endl;
 			
 		}
 	}

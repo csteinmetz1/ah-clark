@@ -1,28 +1,32 @@
+#ifndef TIVA_H
+#define TIVA_H
+
 #include <tuple>
 #include <string>
 #include <iostream> 
 #include <cmath>
 #include "Puck.h"
-#include <vector>
 
 class TivaController
 {
 public:
 	// getter methods
-	double getMotor1Angle() const;
-	double getMotor2Angle() const;
+	double getMotor1AngleRadians() const;
+	double getMotor2AngleRadians() const;
+	double getMotor1AngleDegrees() const;
+	double getMotor2AngleDegrees() const;
 	Vec_double getArm1Location() const;
-	Vec_double getArm2Location() const; //get the current paddle position
+	Vec_double getArm2Location() const;
 	double getArm1Length() const;
 	double getArm2Length() const;
 	double getxOffset() const;
 	double getyOffset() const;
-	double getxcoord() const;
-	double getycoord() const;
 
 	// setter methods
-	void setMotor1Angle(double new_q1);
-	void setMotor2Angle(double new_q2);
+	void setMotor1AngleRadians(double new_q1);
+	void setMotor2AngleRadians(double new_q2);
+	void setMotor1AngleDegrees(double new_q1);
+	void setMotor2AngleDegrees(double new_q2);
 	void setXOffsetCm(double new_xOffsetCm);
 	void setYOffsetCm(double new_yOffsetCm);
 	void setArm1Cm(double new_arm1Cm);
@@ -32,17 +36,16 @@ public:
 	void resetArm();
 	void updateArmLocation();
 	void moveArm(Vec_double point, bool negative);
+	static std::vector<Vec_double> computePath(Vec_double start, Vec_double end, int steps);
+	static std::vector<Vec_double> computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint,
+		double yhit=20, double xlim=10, double ylim=10, int steps=250);
 	std::tuple<double, double> computeKinematics(Vec_double point, bool negative);
-	std::vector<Vec_double> computePath(Vec_double start, Vec_double stop, int steps);
 
-	// puck methods
-	//Vec_double computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames);
-	//std::vector<Vec_double> computeTrajectory(Puck puck, int estimation_size);
+	// drawing
+	static std::vector<Vec_double> Circle(double radius, int steps, Vec_double offset);
 
 	// Constructor
-	TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm,
-		double xOffsetCm, double yOffsetCm);
-
+	TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, double xOffsetCm, double yOffsetCm);
 
 private:
 	double q1;
@@ -50,17 +53,11 @@ private:
 	Vec_double arm1Pos;
 	Vec_double arm2Pos;
 
-	double x_position;
-	double y_position;
-
-	//double x1;
-	//double y1;
-	//double x2;
-	//double y2;
-
 	double unitsPerCm;
 	double xOffset;
 	double yOffset;
 	double a1;
 	double a2;
 };
+
+#endif

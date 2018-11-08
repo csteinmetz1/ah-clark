@@ -1,3 +1,5 @@
+#ifndef PUCK_H
+#define PUCK_H
 
 #include <vector>
 
@@ -42,3 +44,5 @@ private:
 	double rinkWidth;
 	double rinkHeight;
 };
+
+#endif
