@@ -154,33 +154,33 @@ int _tmain(int argc, _TCHAR* argv[])
 				 
 				//uncomment to test the coordinates
 				//imshow("initial image", setup_img);
-				/*MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
-					"Click the left up corner first and clockwise for the rest.",
-					"Click", MB_OK);
-				cvSetMouseCallback("initial image", MousCallback, &points);
+				//MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
+				//	"Click the left up corner first and clockwise for the rest.",
+				//	"Click", MB_OK);
+				//cvSetMouseCallback("initial image", MousCallback, &points);
 
-				//will wait for 4 mouse clicks before breaking out of loop
-				while (1)
-				{
-					// wait for mouse clicks
-					waitKey(10);
-					if (points.size() == 4)
-					{
-						cout << "4 points gathered" << endl;
-						cout << points[0].x << "\t" << points[0].y<<endl;
-						cout << points[1].x << "\t" << points[1].y << endl;
-						cout << points[2].x << "\t" << points[2].y << endl;
-						cout << points[3].x << "\t" << points[3].y << endl;
+				////will wait for 4 mouse clicks before breaking out of loop
+				//while (1)
+				//{
+				//	// wait for mouse clicks
+				//	waitKey(10);
+				//	if (points.size() == 4)
+				//	{
+				//		cout << "4 points gathered" << endl;
+				//		cout << points[0].x << "\t" << points[0].y<<endl;
+				//		cout << points[1].x << "\t" << points[1].y << endl;
+				//		cout << points[2].x << "\t" << points[2].y << endl;
+				//		cout << points[3].x << "\t" << points[3].y << endl;
 
-						break;
-					}
-				}
-				getchar();*/
+				//		break;
+				//	}
+				//}
+				//getchar();
 				
-				points.push_back(Point2f(167, 344));
-				points.push_back(Point2f(160, 138));
-				points.push_back(Point2f(565, 3));
-				points.push_back(Point2f(570, 490));
+				points.push_back(Point2f(159, 342));
+				points.push_back(Point2f(152, 146));
+				points.push_back(Point2f(535, 3));
+				points.push_back(Point2f(554, 475));
 
 				//returns the H matrix
 				Homography = findHomography(Mat(points), Mat(points2));
@@ -215,13 +215,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		//Dispay warped and 
 		if (setup == 2)
 		{
-			/*try{
+			try{
 				imshow("Warped", warped_display);
 			}
 			catch (exception&)
 			{
 				cout << "warped exception" << endl;
-			}*/
+			}
 			try{
 				imshow("Binary Image", binary_display);
 			}
@@ -310,16 +310,16 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found);
 
 				//display the XY coordinates of the puck in real time (according to the warped image)
-				//cout << posX << "\t"<< posY << endl; 
-				
+				//cout << posX << "\t" << posY << endl;
+
 				setup = 1; // why is this getting set to 1 again?
 				if (posX == -1.0 || posY == -1.0)
 					puck_found = 0;
 
 				// this is our tuning of the vision coordinates
-				sendx = (posX - 9.1)*0.368715; 
-				sendy = (posY - 5.5)*0.345896;
-				
+				sendx = (posX)/3.04762; 
+				sendy = (posY)/2.985;
+				cout << sendx << "\t" << sendy << endl;
 				// tell the arm we are ready
 				if (arm_comm == 0)
 					arm_comm = 1;
@@ -333,9 +333,9 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			if (setup == 0)
 			{
 				//this can change later
-				circle(CamImg, Point(438, 372), 2, Scalar(255, 0, 255), 2, 8, 0);
-				circle(CamImg, Point(285, 244), 2, Scalar(255, 0, 255), 2, 8, 0);
-				circle(CamImg, Point(434, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
+				circle(CamImg, Point(419, 364), 2, Scalar(255, 0, 255), 2, 8, 0);
+				circle(CamImg, Point(273, 243), 2, Scalar(255, 0, 255), 2, 8, 0);
+				circle(CamImg, Point(412, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
 				//circle(CamImg, Point(463, 385), 2, Scalar(255, 0, 255), 2, 8, 0);
 			}
 			*(Instance->Frame) = CamImg;
@@ -347,7 +347,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			FramerCounter++;
 			EndTime = clock();
 			if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
-				cout << "FPS:" << FramerCounter << endl;
+				//cout << "FPS:" << FramerCounter << endl;
 				FramerCounter = 0;
 			}
 		}
@@ -442,13 +442,13 @@ static DWORD WINAPI ArmThread(LPVOID)
 		{
 			if (puck_found == 0) // go home
 			{
-				std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home);
+				std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home, 1000);
 
 				for (auto point : arm_path) {
 					receiver.GetData(&pkin); // do we have to recieve data each time we send data?
 					Tiva.moveArm(point, false);
-					pkout.flt1 = (float)Tiva.getMotor1AngleDegrees()
-					pkout.flt2 = (float)Tiva.getMotor2AngleDegrees()
+					pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+					pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
 					sender.SendData(&pkout);
 					Sleep(1);
 				}
@@ -464,7 +464,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 				Puck puck = Puck(start_position, end_position, acceleration, radius, 1.0, widthCm, heightCm, sample_size);
 
-				if (end_position.y > 50 && puck.getVelocity().y < 0.0 && velocityDelta < 1) {
+				if (end_position.y > 50 && puck.getVelocity().y < 0.0) {
 					trajectory = puck.computeTrajectory(100);
 
 					for (auto point : trajectory)
@@ -472,7 +472,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						if (point.y < 40 && point.y > 10)
 						{
 							// compute arm path from current location
-							std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), point);
+							std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), point, 1000);
 
 							for (auto point : arm_path) { 
 								// move the arm to desired location
