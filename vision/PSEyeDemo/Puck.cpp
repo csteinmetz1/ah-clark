@@ -2,10 +2,10 @@
 #include <iostream>
 
 // Constructor
-Puck::Puck(Vec_double firstPos, Vec_double secondPos, Vec_double initAcl, double radius, 
-		   double unitsPerCm, double widthCm, double heightCm, int frames) {
-	setPosition(secondPos);
-	computeVelocity(firstPos, secondPos, frames);
+Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius, 
+		   double unitsPerCm, double widthCm, double heightCm) {
+	setPosition(points.back());
+	computeVelocity(points);
 	setAcceleration(initAcl);
 	setRadius(radius);
 	setUnitsPerCm(unitsPerCm);
@@ -76,14 +76,29 @@ void Puck::checkBoundary()
   //}
 }
 
-void Puck::computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames) {
+void Puck::computeVelocity(std::vector<Vec_double> points) 
+{
+	auto fit = leastSquaresFit(points);
 
-	vel.x = (final_pos.x - init_pos.x) / frames;
-	vel.y = (final_pos.y - init_pos.y) / frames;
+	Vec_double initPos, finalPos;
+
+	initPos.y = points.front().y; 
+	initPos.x = ( initPos.y - std::get<0>(fit) ) / std::get<1>(fit);
+
+	std::cout << initPos.x << " " << initPos.y << std::endl;
+
+	finalPos.y = points.back().y; 
+	finalPos.x = ( finalPos.y - std::get<0>(fit) ) / std::get<1>(fit);
+
+	std::cout << finalPos.x << " " << finalPos.y << std::endl;
+
+	vel.x = (finalPos.x - initPos.x) / double(points.size());
+	vel.y = (finalPos.y - initPos.y) / double(points.size());
 
 }
 
-std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) {
+std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) 
+{
 
 	std::vector<Vec_double> trajectory;
 	for ( int frame = 0; frame < estimation_size; frame++ ) {
@@ -91,5 +106,56 @@ std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) {
 		trajectory.push_back(getPosition());
 	}
 	return trajectory;
+}
+
+std::tuple<double, double> Puck::leastSquaresFit(std::vector<Vec_double> points)
+{
+	std::vector<double> xy;
+	std::vector<double> x_sqrd;
+	std::vector<double> y_sqrd;
+
+	double n = points.size();
+	double sum_x = 0;
+	double sum_y = 0;
+	double sum_xy = 0;
+	double sum_x_sqrd = 0;
+	double sum_y_sqrd = 0;
+
+	for (auto point : points) 
+	{
+		sum_x += point.x;
+		sum_y += point.y;
+		xy.push_back( point.x * point.y );
+		x_sqrd.push_back( pow(point.x, 2) );
+		y_sqrd.push_back( pow(point.y, 2) );
+	}
+
+	for (auto val : xy) 
+	{
+		sum_xy += val;
+	}
+
+	for (auto val : x_sqrd)
+	{
+		sum_x_sqrd += val;
+	}
+
+	for (auto val : y_sqrd)
+	{
+		sum_y_sqrd += val;
+	}
+
+	// find model parameters
+	double a;
+	double b;
+
+	a = ( (sum_y * sum_x_sqrd) - (sum_x * sum_xy) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
+	b = ( (n * sum_xy) - (sum_x * sum_y) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
+
+	std::cout << a << " " << b << std::endl;
+
+	auto fit = std::make_tuple(a, b);
+
+	return fit;
 }
 

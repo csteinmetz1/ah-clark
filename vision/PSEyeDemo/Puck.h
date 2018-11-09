@@ -2,6 +2,7 @@
 #define PUCK_H
 
 #include <vector>
+#include <cmath>
 
 struct Vec_double {
 	double x;
@@ -28,12 +29,13 @@ class Puck
 		// useful methods
 		void move();
 		void checkBoundary();
-		void computeVelocity(Vec_double init_pos, Vec_double final_pos, int frames);
+		void computeVelocity(std::vector<Vec_double> points);
 		std::vector<Vec_double> computeTrajectory(int estimation_size);
+		static std::tuple<double, double> leastSquaresFit(std::vector<Vec_double> points);
 
 		// Constructor
-		Puck(Vec_double firstPos, Vec_double secondPos, Vec_double initAcl, double radius, 
-		   double unitsPerCm, double widthCm, double heightCm, int frames);
+		Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius, 
+		   double unitsPerCm, double widthCm, double heightCm);
 
 	private:
 		Vec_double pos;

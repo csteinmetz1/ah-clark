@@ -202,6 +202,7 @@ int main() {
 	// instantiate puck
 	Vec_double initPos;
 	Vec_double secondPos;
+	Vec_double thirdPos;
 	Vec_double initAcl;
 
 	initPos.x = 33.0;
@@ -210,7 +211,13 @@ int main() {
 	secondPos.x = 30.0;
 	secondPos.y = 85.0;
 
-	int frames = 5;
+	thirdPos.x = 27.5;
+	thirdPos.y = 70.0;
+
+	std::vector<Vec_double> points;
+	points.push_back(initPos);
+	points.push_back(secondPos);
+	points.push_back(thirdPos);
 
 	initAcl.x = 0;
 	initAcl.y = 0;
@@ -218,7 +225,9 @@ int main() {
 	double radius = 0.0;
 	double widthCm = 66.0;
 	double heightCm = 136.0;
-	Puck puck = Puck(initPos, secondPos, initAcl, radius, 1.0, widthCm, heightCm, frames);
+	Puck puck = Puck(points, initAcl, radius, 1.0, widthCm, heightCm);
+
+	std::cout << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
 
 	// vector to hold trajectory points
 	std::vector<Vec_double> trajectory;
@@ -226,6 +235,12 @@ int main() {
 	// vector to hold path points
 	std::vector<Vec_double> path;
 	trajectory = puck.computeTrajectory(60);
+
+	std::cout << "trajectory" << std::endl;
+
+	for (auto point : trajectory) {
+		//std::cout << point.x << " " << point.y << std::endl;
+	}
 
 	// Now let's hit a puck
 	std::vector<Vec_double> hitPath;
