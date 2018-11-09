@@ -109,7 +109,7 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 }
 
 std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, 
-													  double fps, double yhit, double xlim, double ylim)
+													  double fps, double yhit, double xlim, double ylim, int minSteps)
 {
 	Vec_double hitPoint;
 	hitPoint.x = -1; // default value for flag
@@ -178,6 +178,11 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	// compute number of steps to take (we assume one step takes ~2ms)
 	arrivalTime = (hitFrame / fps) * 1000.0;
 	steps = int(arrivalTime / 2.0) - 25;
+
+	// checking for step size to enforce minimum step size
+	if (steps < minSteps) {
+		steps = minSteps;
+	}
 
 	hitPath = computePath(hitStartPoint, hitEndPoint, steps/2);
 	initPath = computePath(arm2Pos, hitStartPoint, steps/2);

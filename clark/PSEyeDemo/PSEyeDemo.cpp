@@ -75,6 +75,7 @@ double sendy;
 int arm_comm = 0;
 int frame_number;
 vector<Vec_double> traj_line;  //used for debugging 
+int glob_FPS;
 
 //////////////////////////////////////////////////
 
@@ -355,6 +356,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			EndTime = clock();
 			if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
 				//cout << "FPS:" << FramerCounter << endl;
+				glob_FPS = FramerCounter;
 				FramerCounter = 0;
 			}
 		}
@@ -423,7 +425,9 @@ static DWORD WINAPI ArmThread(LPVOID)
 		home.x = 33;
 		home.y = 20;
 		int home_status = 0;				//0 = not at home
-
+		
+		//puck disappears variable.  If the puck disappears at any point during frame sampling set disappear to 1
+		int disappear = 0;
 		// set arm to home - make sure to manually move the arm home before starting the program!
 		Tiva.moveArm(home, false);
 
@@ -452,17 +456,28 @@ static DWORD WINAPI ArmThread(LPVOID)
 			else if (arm_comm == 1)
 			{
 				puck_points.clear(); // remove all previous points
-
+				//Sleep(5);
 				// acquire puck locations over sample size
 				while (puck_points.size() < sample_size)
 				{
 					frame_number = 1;
+					if (sendx < 0 || sendy < 0) //the puck is gone
+					{
+						disappear = 1;
+						break;
+					}
 					point.x = sendx;
 					point.y = sendy;
 					puck_points.push_back(point);
 					while (frame_number % 2 != 0) {};
 				}
-
+				//if we get garbage values then we need to continue to the next iteration in our loop
+				if (disappear == 1)
+				{
+					arm_comm = 0;
+					disappear = 0;
+					continue;
+				}
 				start = clock();
 				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
 
@@ -483,23 +498,24 @@ static DWORD WINAPI ArmThread(LPVOID)
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
 
-				hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0, 25.0, 10.0, 10.0);
+				hitPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 200);
 				end = clock();
 				//cout << "clock time: " << ((double)(end - start)) / CLOCKS_PER_SEC << endl;
 				
 				if (hitPath.size() > 0) // check if the path contains points
 				{
-					std::cout << "hit path" << std::endl;
+					//std::cout << "hit path" << std::endl;
 
-					for (auto point : hitPath) {
-						//std::cout << point.x << " " << point.y << std::endl;
-						receiver.GetData(&pkin);
-						Tiva.moveArm(point, false);
-						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-						sender.SendData(&pkout);
-						Sleep(1);
-					}
+					//for (auto point : hitPath) 
+					//{
+					//	//std::cout << point.x << " " << point.y << std::endl;
+					//	receiver.GetData(&pkin);
+					//	Tiva.moveArm(point, false);
+					//	pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+					//	pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+					//	sender.SendData(&pkout);
+					//	Sleep(1);
+					//}
 					home_status = 0;
 					arm_comm = 0;
 				}
