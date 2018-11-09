@@ -27,6 +27,7 @@ using namespace cv; // allows ... without using namespace cv::
 #define RESOLUTION CLEYE_VGA
 // QVGA or VGA
 
+
 /* used for passing data between main and camera thread */
 typedef struct{
 	CLEyeCameraInstance CameraInstance;
@@ -73,6 +74,8 @@ double sendy;
 
 int arm_comm = 0;
 int frame_number;
+vector<Vec_double> traj_line;  //used for debugging 
+
 //////////////////////////////////////////////////
 
 // main function that ties everything together, threads and camera functionality will be initiated here
@@ -311,7 +314,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				//gather the area and XY center of the centroid/contour
 				oMoments = moments(final_thresh, true);
-				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found);
+				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found, traj_line);
 
 				//display the XY coordinates of the puck in real time (according to the warped image)
 				//cout << posX << "\t" << posY << endl;
@@ -442,6 +445,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						sender.SendData(&pkout);
 						Sleep(1);
 					}
+					traj_line.clear();
 					home_status = 1;
 				}
 			}
@@ -470,7 +474,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				// vector to hold path points
 				std::vector<Vec_double> path;
 				trajectory = puck.computeTrajectory(estimation_size);
-
+				traj_line = trajectory;
 				// Now let's hit a puck
 				std::vector<Vec_double> hitPath;
 

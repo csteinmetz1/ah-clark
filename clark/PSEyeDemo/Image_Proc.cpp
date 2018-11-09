@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Image_Proc.h"
-#include "Puck.h"
+
 
 /*Function that does the erodes and dilates for each frame
 (argument that returns the result, argument that is considered the input)*/
@@ -18,7 +18,7 @@ void noise_reduction(Mat dest, Mat source)
 
 }
 
-void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found)
+void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, double * lastArea, double *posX, double *posY, int *puck_found, vector<Vec_double> trajectory)
 {
 
 	// puck location will not update unless it moves within bounds set by change_amt 
@@ -62,11 +62,23 @@ void puck_location(Mat dest, Moments oMoments, double * lastx, double * lasty, d
 			*posY = *lasty;
 			dArea = *lastArea;
 		}
+
 		// stuff if there is a acceptable difference in the last and current then we change the last if ()
 		circle_rad = dArea / 10;
 
 		// display a circle around the centroid of the puck.
 		circle(dest, Point(*posX, *posY), circle_rad % 100, Scalar(255, 0, 255), 2, 8, 0);
+		
+		// plot the trajectory points
+		if (trajectory.size() > 0)
+		{
+			for (auto point : trajectory)
+			{
+				point.x = point.x * 3.04762;
+				point.y = point.y * 2.985;
+				circle(dest, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
+			}
+		}
 
 		*lastArea = dArea;
 		*lastx = *posX;
