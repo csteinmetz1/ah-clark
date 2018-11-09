@@ -20,7 +20,6 @@ struct PACKIN
 	float flt2;
 };
 
-
 struct PACKOUT
 {
 	float flt1;
@@ -52,13 +51,14 @@ int _tmain(int argc, TCHAR* argv[])
 		PACKIN pkin;
 		PACKOUT pkout;
 		char string[256];
-		double x, y;
 		char* pEnd;
+
 		TivaController Tiva = TivaController(1.0, 46.8313, 25.4, 33.02, -26.67);
+		Vec_double setPoint;
+
 		// Routing data endlessly
 		while (1)
 		{
-
 			printf("Enter x: ");
 			fgets(string, 100, stdin);
 			x = strtof(string, &pEnd);
@@ -66,23 +66,25 @@ int _tmain(int argc, TCHAR* argv[])
 			printf("Enter y: ");
 			fgets(string, 100, stdin);
 			y = strtof(string, &pEnd);
+
+			setPoint.x = x;
+			setPoint.y = y;
+
 			printf("\n");
 			// prevent from running to fast
 			Sleep(1);
 			// get latest data from receiver
 			receiver.GetData(&pkin);
 
-			Tiva.moveArm(x, y, false);
+			Tiva.moveArm(setPoint, false);
 
 			// repack the data
-			pkout.flt1 = Tiva.getMotor1Angle();
-			pkout.flt2 = Tiva.getMotor2Angle();
+			pkout.flt1 = Tiva.getMotor1AngleDegrees();
+			pkout.flt2 = Tiva.getMotor2AngleDegrees();
 
 			// send the repacked data through sender
 			sender.SendData(&pkout);
 		}
 	}
-
-
 	return nRetCode;
 }
