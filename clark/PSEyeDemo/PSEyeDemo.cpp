@@ -37,8 +37,11 @@ typedef struct{
 	Mat *binary_display;
 } CAMERA_AND_FRAME;
 
+/*Function Prototypes*/
+
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer); // ah this is how you get data back and forth between threads 
 static DWORD WINAPI ArmThread(LPVOID);
+void moveArm(CUDPReceiver *, CUDPSender *, Vec_double , PACKIN , PACKOUT , TivaController *);
 void inst_taskbars(void);
 
 //////////////////////////////////////////////////
@@ -366,7 +369,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 	}
 	else {
 		//33.0 -10.0 (x offset , yoffset)
-		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 33.02, -15);
+		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 30, -23);
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -387,52 +390,29 @@ static DWORD WINAPI ArmThread(LPVOID)
 		corner_cases.x = 61.0; corner_cases.y = 8;  left_corner.push_back(corner_cases);
 		corner_cases.x = 61.0; corner_cases.y = 14;  left_corner.push_back(corner_cases);
 
-		Vec_double initPos;
-		Vec_double initVel;
-		Vec_double initAcl;
-
-		initPos.x = 30.0;
-		initPos.y = 60.0;
-
-		initVel.x = -0.5;
-		initVel.y = -2.0;
-
-		initAcl.x = 0.0;
-		initAcl.y = 0.0;
-
-		double radius = 0;		// outer bounds are close to their actual values at the center of the puck
-		double widthCm = 66.0;
-		double heightCm = 134.0;
-
-		std::vector<Vec_double> trajectory;
-		int estimation_size = 60;
-		int step_size = 100;
-		int sample_size = 3; // how many frames to sample for velocity calcuation
-
-		// Create receiver, with packet size equal to that of PACKIN and port at 12403 or the output port for the Tiva in virtual port 3
+		// Initialize UDP communication
 		CUDPReceiver receiver(sizeof(PACKIN), 12403);
-
-		// Create sender, with packet size equal to that of PACKOUT and port at port is 12302 or input port for the Tiva in virtual port 2, 
-		// and remote address 127.0.0.1(localhost)
 		CUDPSender sender(sizeof(PACKOUT), 12302, "127.0.0.1");
 
 		// Define buffers for input and output
 		PACKIN pkin;
 		PACKOUT pkout;
-		float q1, q2;
-		char* pEnd;
 
-		Vec_double start_position;
-		Vec_double end_position;
-		Vec_double velocity;
-		Vec_double acceleration;
-		acceleration.x = 0.0;
-		acceleration.y = 0.0;
+		// Puck initialization variables
+		double radius = 3.15;		// puck radius in cm
+		double widthCm = 66.0;		// rink width in cm
+		double heightCm = 134.0;	// rink height in cm
+		Vec_double initAcl;			// default puck acceleration 
+		initAcl.x = 0.0;			// we may include this in the future
+		initAcl.y = 0.0;
 
-		int i;
-		bool joint = false;
-		double pastVelocity = 0.0;
+		int sample_size = 3;				// number of samples to use for velocity prediction
+		Vec_double point;					// a single puck point
+		vector<Vec_double> puck_points;		// vector of samples puck points
+		std::vector<Vec_double> trajectory; // vector of future puck points
+		int estimation_size = 60;			// number of frames to look ahead into the future
 
+		// arm home position
 		Vec_double home;
 		home.x = 33;
 		home.y = 20;
@@ -445,7 +425,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home, 1000);
 
 				for (auto point : arm_path) {
-					receiver.GetData(&pkin); // do we have to recieve data each time we send data?
+					receiver.GetData(&pkin);
 					Tiva.moveArm(point, false);
 					pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
 					pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
@@ -455,95 +435,18 @@ static DWORD WINAPI ArmThread(LPVOID)
 			}
 			else if (arm_comm == 1)
 			{
-				frame_number = 1;
-				start_position.x = sendx;
-				start_position.y = sendy;
-				while (frame_number % sample_size != 0) {};
-				end_position.x = sendx;
-				end_position.y = sendy;
-
-				Puck puck = Puck(start_position, end_position, acceleration, radius, 1.0, widthCm, heightCm, sample_size);
-
-				if (end_position.y > 50 && puck.getVelocity().y < 0.0) {
-					trajectory = puck.computeTrajectory(100);
-
-					for (auto point : trajectory)
-					{
-						if (point.y < 40 && point.y > 10)
-						{
-							// compute arm path from current location
-							std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), point, 1000);
-
-							for (auto point : arm_path) { 
-								// move the arm to desired location
-								receiver.GetData(&pkin);
-								Tiva.moveArm(point, joint);
-								pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-								pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-								sender.SendData(&pkout);
-								Sleep(1);
-							}
-							arm_comm = 0;
-							break;
-						}
-					}
+				// acquire puck locations over sample size
+				while (puck_points.size() < sample_size)
+				{
+					frame_number = 1;
+					point.x = sendx;
+					point.y = sendy;
+					puck_points.push_back(point);
+					while (frame_number % 2 != 0) {};
 				}
-				//else if (end_position.y < 50 && abs(puck.getVelocity().x) < 1.2 && abs(puck.getVelocity().y) < 1.2)
-				//{
 
-				//	//can do some cases where if the end_point is a specific value we behave a certain way
-				//	//think ZONES
-				//	//right corner
-				//	if (end_position.y < 9.5 && end_position.x > 0.0 && end_position.x < 24.5)
-				//	{
-				//		for (auto move_position : right_corner)
-				//		{
-				//			cout << "hit puck!!" << endl;
-				//			receiver.GetData(&pkin);
-				//			Tiva.moveArm(move_position, joint);
-				//			q1 = (float)Tiva.getMotor1Angle() * (180 / 3.141592653589793238463);
-				//			q2 = (float)Tiva.getMotor2Angle() * (180 / 3.141592653589793238463);
-				//			pkout.flt1 = q1;
-				//			pkout.flt2 = q2;
-				//			sender.SendData(&pkout);
-				//			Sleep(300);
-				//		}
-				//	}
-				//	//left corner
-				//	else if (end_position.y < 9.5 && end_position.x >47.0 && end_position.x < 66.0)
-				//	{
-				//		for (auto move_position : left_corner)
-				//		{
-				//			cout << "hit puck!!" << endl;
-				//			receiver.GetData(&pkin);
-				//			Tiva.moveArm(move_position, joint);
-				//			q1 = (float)Tiva.getMotor1Angle() * (180 / 3.141592653589793238463);
-				//			q2 = (float)Tiva.getMotor2Angle() * (180 / 3.141592653589793238463);
-				//			pkout.flt1 = q1;
-				//			pkout.flt2 = q2;
-				//			sender.SendData(&pkout);
-				//			Sleep(300);
-				//		}
-				//	}
-				//	else {
-				//		if (puck.getVelocity().y > 0.0 && Tiva.getycoord() < puck.getVelocity().y)
-				//			end_position.y = end_position.y + 5;
-				//	cout << "hit puck!!" << endl;
-				//	receiver.GetData(&pkin);
-				//	//end_position.x =  end_position.x + 2*puck.getVelocity().x;
-				//	//end_position.y = end_position.y + 4*puck.getVelocity().y;
-				//	if (end_position.x < 5.0)
-				//		end_position.x = 5;
-				//	if (end_position.x > 60.0)
-				//		end_position.x = 60.0;
-				//	Tiva.moveArm(end_position, joint);
-				//	q1 = (float)Tiva.getMotor1Angle() * (180 / 3.141592653589793238463);
-				//	q2 = (float)Tiva.getMotor2Angle() * (180 / 3.141592653589793238463);
-				//	pkout.flt1 = q1;
-				//	pkout.flt2 = q2;
-				//	sender.SendData(&pkout);
-				//	}
-				//}	
+				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
+					
 			}
 		}
 
@@ -568,3 +471,14 @@ void inst_taskbars(void)
 	cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
 	cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
 }
+
+void moveArm(CUDPReceiver *receiver, CUDPSender *sender, Vec_double point, PACKIN pkin, PACKOUT pkout, TivaController *Tiva)
+{
+	receiver->GetData(&pkin);
+	Tiva->moveArm(point, false);
+	pkout.flt1 = (float)Tiva->getMotor1AngleDegrees();
+	pkout.flt2 = (float)Tiva->getMotor2AngleDegrees();
+	sender->SendData(&pkout);
+	Sleep(1);
+}
+

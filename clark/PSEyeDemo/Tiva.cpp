@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "Tiva.h"
 
 // getter methods

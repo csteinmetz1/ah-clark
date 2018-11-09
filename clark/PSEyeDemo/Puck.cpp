@@ -1,5 +1,7 @@
+#include "stdafx.h"
 #include "Puck.h"
 #include <iostream>
+#include <tuple>
 
 // Constructor
 Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius, 
