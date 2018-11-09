@@ -108,15 +108,18 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 }
 
 std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, 
-													   double yhit=30, double xlim=10, double ylim=10, int steps=50)
+													  double fps, double yhit=25, double xlim=10, double ylim=10)
 {
 	Vec_double hitPoint;
+	int hitFrame;
 
-	// find point at which to hit the puck
-	for (auto point : trajectory) {
-		if (point.y < yhit) {
-			hitPoint.x = point.x;
-			hitPoint.y = point.y;
+	for (int index = 0; index < trajectory.size(); ++index)
+	{
+		if (trajectory[index].y < yhit) 
+		{
+			hitPoint.x = trajectory[index].x;
+			hitPoint.y = trajectory[index].y;
+			hitFrame = index + 1; 	// find frame at which to hit the puck
 			break;
 		}
 	}
@@ -155,17 +158,31 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	hitEndPoint.x = hitPoint.x - (hitPoint.x - targetPoint.x) * 0.15; 
 	hitEndPoint.y = slope * (hitEndPoint.x - hitPoint.x) + hitPoint.y;	
 
-	std::vector<Vec_double> hitPath; // total path from start point behind puck to point past the puck towards target
-									 // Note: make sure to move the arm to the start point with a path first
+	std::vector<Vec_double> initPath; // path from the current arm position to the strat of the hit path
+	std::vector<Vec_double> hitPath;  // path from start point behind puck to point past the puck towards target
+	std::vector<Vec_double> fullPath; // concatenation of the above two paths 
 
-	hitPath = computePath(hitStartPoint, hitEndPoint, steps);
+	double arrivalTime; // puck arrivial time in milliseconds
+	int steps; 			// path steps to take to reach end point
 
-	return hitPath;
+	// compute number of steps to take (we assume one step takes ~2ms)
+	arrivalTime = (hitFrame / fps) * 1000.0;
+	steps = int(arrivalTime / 2.0) - 25;
+
+	hitPath = computePath(hitStartPoint, hitEndPoint, steps/2);
+	initPath = computePath(arm2Pos, hitStartPoint, steps/2);
+
+	// pack the two paths into a sigle vector
+	fullPath.reserve( initPath.size() + hitPath.size() ); // preallocate memory
+	fullPath.insert( fullPath.end(), initPath.begin(), initPath.end() );
+	fullPath.insert( fullPath.end(), hitPath.begin(), hitPath.end() );
+
+	return fullPath;
 }
 
 //////////////////////////////////////////////////////////
-/* this is an example of how to use the class 
-
+// this is an example of how to use the class 
+/*
 int main() {
 
 	// instaniate Tiva object
@@ -211,7 +228,6 @@ int main() {
 	trajectory = puck.computeTrajectory(60);
 
 	// Now let's hit a puck
-	std::vector<Vec_double> initPath;
 	std::vector<Vec_double> hitPath;
 
 	// Define target - the center of the goal
@@ -219,14 +235,7 @@ int main() {
 	targetPoint.x = 33.0;
 	targetPoint.y = 136.0;
 
-	hitPath = Tiva.computeHitPath(trajectory, targetPoint);
-	initPath = Tiva.computePath(Tiva.getArm2Location(), hitPath.front(), 50);
-
-	std::cout << "init path" << std::endl;
-
-	for (auto point : initPath) {
-		std::cout << point.x << " " << point.y << std::endl;
-	}
+	hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0);
 
 	std::cout << "hit path" << std::endl;
 
