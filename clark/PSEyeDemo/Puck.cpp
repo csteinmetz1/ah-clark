@@ -87,12 +87,12 @@ void Puck::computeVelocity(std::vector<Vec_double> points)
 	initPos.y = points.front().y; 
 	initPos.x = ( initPos.y - std::get<0>(fit) ) / std::get<1>(fit);
 
-	std::cout << initPos.x << " " << initPos.y << std::endl;
+	//std::cout << initPos.x << " " << initPos.y << std::endl;
 
 	finalPos.y = points.back().y; 
 	finalPos.x = ( finalPos.y - std::get<0>(fit) ) / std::get<1>(fit);
 
-	std::cout << finalPos.x << " " << finalPos.y << std::endl;
+	//std::cout << finalPos.x << " " << finalPos.y << std::endl;
 
 	vel.x = (finalPos.x - initPos.x) / double(points.size());
 	vel.y = (finalPos.y - initPos.y) / double(points.size());
@@ -154,7 +154,7 @@ std::tuple<double, double> Puck::leastSquaresFit(std::vector<Vec_double> points)
 	a = ( (sum_y * sum_x_sqrd) - (sum_x * sum_xy) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
 	b = ( (n * sum_xy) - (sum_x * sum_y) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
 
-	std::cout << a << " " << b << std::endl;
+	//std::cout << a << " " << b << std::endl;
 
 	auto fit = std::make_tuple(a, b);
 

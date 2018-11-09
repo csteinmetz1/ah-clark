@@ -109,9 +109,11 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 }
 
 std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, 
-													  double fps, double yhit=25, double xlim=10, double ylim=10)
+													  double fps, double yhit, double xlim, double ylim)
 {
 	Vec_double hitPoint;
+	hitPoint.x = -1; // default value for flag
+	hitPoint.y = -1;
 	int hitFrame;
 
 	for (int index = 0; index < trajectory.size(); ++index)
@@ -125,13 +127,20 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 		}
 	}
 
+	// if no hit point found return empty vector
+	if (hitPoint.x == -1 && hitPoint.y == -1) 
+	{
+		std::vector<Vec_double> emptyPath;
+		return emptyPath;
+	}
+
 	double slope; 			  // slope of the line connecting puck hit point and puck target point
 	Vec_double hitStartPoint; // start point of the hit path which is behind the puck aimed at the target
 	Vec_double hitEndPoint;   // end point of the hit path which is past the puck on the line towards the target
 
 	slope = (targetPoint.y - hitPoint.y)  / (targetPoint.x - hitPoint.x);
 
-	std::cout << slope << std::endl;
+	//std::cout << slope << std::endl;
 
 	if (slope < 0) // negative slope 
 	{
@@ -172,6 +181,8 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 
 	hitPath = computePath(hitStartPoint, hitEndPoint, steps/2);
 	initPath = computePath(arm2Pos, hitStartPoint, steps/2);
+
+	//std::cout << hitPath.size() << initPath.size() << std::endl;
 
 	// pack the two paths into a sigle vector
 	fullPath.reserve( initPath.size() + hitPath.size() ); // preallocate memory

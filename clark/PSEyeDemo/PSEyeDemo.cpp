@@ -18,6 +18,7 @@
 // UDP
 #include "xPCUDPSock.h"
 #include "UDP_setup.h"
+#include <ctime>
 
 using namespace std; //allows aceess to all std lib functions without using the namespace std::
 using namespace cv; // allows ... without using namespace cv::
@@ -322,7 +323,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 				// this is our tuning of the vision coordinates
 				sendx = (posX)/3.04762; 
 				sendy = (posY)/2.985;
-				cout << sendx << "\t" << sendy << endl;
+				//cout << sendx << "\t" << sendy << endl;
 				// tell the arm we are ready
 				if (arm_comm == 0)
 					arm_comm = 1;
@@ -373,6 +374,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
+		//timing variables
+		clock_t start, end;
 		
 		///// Don't worry I am going to write a method that lets us trace out paths like this
 
@@ -406,7 +409,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		initAcl.x = 0.0;			// we may include this in the future
 		initAcl.y = 0.0;
 
-		int sample_size = 3;				// number of samples to use for velocity prediction
+		int sample_size = 5;				// number of samples to use for velocity prediction
 		Vec_double point;					// a single puck point
 		vector<Vec_double> puck_points;		// vector of samples puck points
 		std::vector<Vec_double> trajectory; // vector of future puck points
@@ -416,25 +419,36 @@ static DWORD WINAPI ArmThread(LPVOID)
 		Vec_double home;
 		home.x = 33;
 		home.y = 20;
+		int home_status = 0;				//0 = not at home
+
+		// set arm to home - make sure to manually move the arm home before starting the program!
+		Tiva.moveArm(home, false);
 
 		//endless loop that will run until program quits
 		while (1)
 		{
 			if (puck_found == 0) // go home
 			{
-				std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home, 1000);
+				if (home_status == 0)
+				{
+					std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home, 250);
 
-				for (auto point : arm_path) {
-					receiver.GetData(&pkin);
-					Tiva.moveArm(point, false);
-					pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-					pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-					sender.SendData(&pkout);
-					Sleep(1);
+					for (auto point : arm_path) 
+					{
+						receiver.GetData(&pkin);
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
+					home_status = 1;
 				}
 			}
 			else if (arm_comm == 1)
 			{
+				puck_points.clear(); // remove all previous points
+
 				// acquire puck locations over sample size
 				while (puck_points.size() < sample_size)
 				{
@@ -445,11 +459,48 @@ static DWORD WINAPI ArmThread(LPVOID)
 					while (frame_number % 2 != 0) {};
 				}
 
+				start = clock();
 				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
-					
+
+				//std::cout << "velocity " << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
+
+				// vector to hold trajectory points
+				std::vector<Vec_double> trajectory;
+
+				// vector to hold path points
+				std::vector<Vec_double> path;
+				trajectory = puck.computeTrajectory(estimation_size);
+
+				// Now let's hit a puck
+				std::vector<Vec_double> hitPath;
+
+				// Define target - the center of the goal
+				Vec_double targetPoint;
+				targetPoint.x = 33.0;
+				targetPoint.y = 136.0;
+
+				hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0, 25.0, 10.0, 10.0);
+				end = clock();
+				//cout << "clock time: " << ((double)(end - start)) / CLOCKS_PER_SEC << endl;
+				
+				if (hitPath.size() > 0) // check if the path contains points
+				{
+					std::cout << "hit path" << std::endl;
+
+					for (auto point : hitPath) {
+						//std::cout << point.x << " " << point.y << std::endl;
+						receiver.GetData(&pkin);
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
+					home_status = 0;
+					arm_comm = 0;
+				}
 			}
 		}
-
 	}
 }
 

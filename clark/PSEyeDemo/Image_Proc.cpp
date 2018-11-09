@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Image_Proc.h"
+#include "Puck.h"
 
 /*Function that does the erodes and dilates for each frame
 (argument that returns the result, argument that is considered the input)*/
