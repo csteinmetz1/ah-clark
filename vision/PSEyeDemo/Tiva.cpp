@@ -96,7 +96,7 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 	if (steps == -1) { 
 		// compute distance to new point
 		distance = sqrt(pow(stop.x - start.x, 2) + pow(stop.y - start.y, 2));
-		steps = floor(distance) + 1;
+		steps = (floor(distance) + 1) * 4;
 	}
 	
 	for (int i = 0; i <= steps; i++)
