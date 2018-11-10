@@ -137,11 +137,11 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	}
 
 	double arrivalTime; // puck arrivial time in milliseconds
-	double timeOffset;   // how much earlier the paddle arrive in milliseconds
+	double timeOffset;  // how much earlier the paddle arrive in milliseconds
 	int stepOffset;     // how much earlier the paddle arrives in steps
 	int steps; 			// path steps to take to reach end point
 
-	timeOffset = 250.0; 				// ms
+	timeOffset = 50.0; 				// ms
 	stepOffset = int(timeOffset / 2.0); // steps
 
 	// compute number of steps to take (we assume one step takes ~2ms)

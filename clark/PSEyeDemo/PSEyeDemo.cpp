@@ -4,6 +4,7 @@
 #include <math.h>
 #include <iostream>
 #include <iomanip>
+#include <string>
 // OpenCV
 #include <cv.h>
 #include <cxcore.h>
@@ -418,7 +419,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		Vec_double point;					// a single puck point
 		vector<Vec_double> puck_points;		// vector of samples puck points
 		std::vector<Vec_double> trajectory; // vector of future puck points
-		int estimation_size = 60;			// number of frames to look ahead into the future
+		int estimation_size = 30;			// number of frames to look ahead into the future
 
 		// arm home position
 		Vec_double home;
@@ -481,8 +482,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 				start = clock();
 				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
 
-				//std::cout << "velocity " << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
-
 				// vector to hold trajectory points
 				std::vector<Vec_double> trajectory;
 
@@ -491,34 +490,39 @@ static DWORD WINAPI ArmThread(LPVOID)
 				trajectory = puck.computeTrajectory(estimation_size);
 				traj_line = trajectory;
 				// Now let's hit a puck
-				std::vector<Vec_double> hitPath;
+				std::vector<Vec_double> hitPath, blockPath;
 
 				// Define target - the center of the goal
 				Vec_double targetPoint;
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
 
-				hitPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 200);
+				//blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 200, "block");
+				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 300, "hit");
+
+				//blockPath.back()
+
 				end = clock();
 				//cout << "clock time: " << ((double)(end - start)) / CLOCKS_PER_SEC << endl;
 				
-				if (hitPath.size() > 0) // check if the path contains points
+				if (blockPath.size() > 0) // check if the path contains points
 				{
 					//std::cout << "hit path" << std::endl;
 
-					//for (auto point : hitPath) 
-					//{
-					//	//std::cout << point.x << " " << point.y << std::endl;
-					//	receiver.GetData(&pkin);
-					//	Tiva.moveArm(point, false);
-					//	pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-					//	pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-					//	sender.SendData(&pkout);
-					//	Sleep(1);
-					//}
+					for (auto point : blockPath)
+					{
+						//std::cout << point.x << " " << point.y << std::endl;
+						receiver.GetData(&pkin);
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
 					home_status = 0;
 					arm_comm = 0;
 				}
+	
 			}
 		}
 	}
