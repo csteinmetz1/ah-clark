@@ -76,7 +76,8 @@ double sendy;
 int arm_comm = 0;
 int frame_number;
 vector<Vec_double> traj_line;  //used for debugging 
-int glob_FPS;
+int FPS;
+Vec_double hit_location;
 
 //////////////////////////////////////////////////
 
@@ -332,8 +333,10 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 				// tell the arm we are ready
 				if (arm_comm == 0)
 					arm_comm = 1;
+				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
+				flip(warped_display, flipped_display, 0);
 
-				*(Instance->warped_display) = warped_display;
+				*(Instance->warped_display) = flipped_display;
 				*(Instance->binary_display) = final_thresh;
 				setup = 2; // what does this do?
 			}
@@ -357,7 +360,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 			EndTime = clock();
 			if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
 				//cout << "FPS:" << FramerCounter << endl;
-				glob_FPS = FramerCounter;
+				FPS = FramerCounter;
 				FramerCounter = 0;
 			}
 		}
@@ -497,17 +500,15 @@ static DWORD WINAPI ArmThread(LPVOID)
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
 
-				//blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 200, "block");
-				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)glob_FPS, 25.0, 10.0, 10.0, 300, "hit");
-
-				//blockPath.back()
-
+				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, 35.0, 10.0, 10.0, 200, "block");
+				//blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, 25.0, 10.0, 10.0, 300, "hit");
 				end = clock();
 				//cout << "clock time: " << ((double)(end - start)) / CLOCKS_PER_SEC << endl;
 				
 				if (blockPath.size() > 0) // check if the path contains points
 				{
 					//std::cout << "hit path" << std::endl;
+					hit_location = blockPath.back();
 
 					for (auto point : blockPath)
 					{
