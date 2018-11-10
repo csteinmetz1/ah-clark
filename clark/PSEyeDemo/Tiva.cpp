@@ -1,4 +1,4 @@
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <string>
 #include <stdexcept>
 #include "Tiva.h"
@@ -107,15 +107,18 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 		point.y = start.y + i * ( (stop.y - start.y) / steps);
 
 		// check if the center of the paddle will cause it to collide with the wall
-		if      (point.x >= 62.0)
+		if      (point.x >= 61.0)
 		{
-			point.x = 62.0;
+			point.x = 61.0;
 		}
-		else if (point.x <= 4.0) 
+		else if (point.x <= 5.0) 
 		{	
-			point.y = 4.0;
+			point.x = 5.0;
 		}
-
+		else if (point.y <= 5.0)
+		{
+			point.y = 5.0;
+		}
 		path.push_back(point);
   	}
 	return path;
