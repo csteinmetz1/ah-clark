@@ -38,7 +38,7 @@ class TivaController
 		void moveArm(Vec_double point, bool negative);
 		static std::vector<Vec_double> computePath(Vec_double start, Vec_double end, int steps);
 		std::vector<Vec_double> computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint,
-													  double fps, double yhit, double xlim, double ylim, int minSteps);
+													  double fps, double yhit, double xlim, double ylim, int minSteps, std::string hitType);
 		std::tuple<double,double> computeKinematics(Vec_double point, bool negative);
 
 		// Constructor
