@@ -460,7 +460,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 			else if (arm_comm == 1)
 			{
 				puck_points.clear(); // remove all previous points
-				//Sleep(5);
 				// acquire puck locations over sample size
 				while (puck_points.size() < sample_size)
 				{
@@ -475,7 +474,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					puck_points.push_back(point);
 					while (frame_number % 2 != 0) {};
 				}
-				//if we get garbage values then we need to continue to the next iteration in our loop
+				//if we get garbage values (when puck is not found) then we need to continue to the next iteration in our loop
 				if (disappear == 1)
 				{
 					arm_comm = 0;
@@ -523,7 +522,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 					home_status = 0;
 					arm_comm = 0;
 				}
-	
 			}
 		}
 	}
