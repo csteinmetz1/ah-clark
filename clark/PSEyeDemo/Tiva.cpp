@@ -124,13 +124,22 @@ std::vector<Vec_double> TivaController::computePath(Vec_double start, Vec_double
 	return path;
 }
 
-std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, 
-													  double fps, double yhit, double xlim, double ylim, int minSteps, std::string hitType)
+// --------------------------------------------------------------------------------------
+// Valid hitTypes
+// --------------------------------------------------------------------------------------
+// "block"     - move the paddle to location of the puck at yhit    	(single motion)
+// "hit"       - block the puck but continue moving past the puck 	    (single motion)
+// "block+hit" - block the puck then quickly hit puck towards target    (two motions)
+// "swing"     - swing at the puck hitting it toward a target 			(two motions)
+// --------------------------------------------------------------------------------------
+std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> trajectory, 
+Vec_double targetPoint, double fps, double yhit, double xlim, double ylim, int minSteps, std::string hitType)
 {
-	Vec_double hitPoint;
-	hitPoint.x = -1; // default value for flag
-	hitPoint.y = -1;
-	int hitFrame;
+	std::vector<Vec_double> emptyPath; // return this whenever there is no valid path
+	Vec_double hitPoint; 	// placeholder for hit point intersection
+	hitPoint.x = -1; 		// default value for flag to check if intersection is found
+	hitPoint.y = -1;		
+	int hitFrame;			// frame number of the puck hit point
 
 	for (int index = 0; index < trajectory.size(); ++index)
 	{
@@ -146,7 +155,6 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	// if no hit point found return empty vector
 	if (hitPoint.x == -1 && hitPoint.y == -1) 
 	{
-		std::vector<Vec_double> emptyPath;
 		return emptyPath;
 	}
 
@@ -155,34 +163,75 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	int stepOffset;     // how much earlier the paddle arrives in steps
 	int steps; 			// path steps to take to reach end point
 
-	timeOffset = 50.0; 				// ms
+	timeOffset = 50.0; 					// ms
 	stepOffset = int(timeOffset / 2.0); // steps
 
 	// compute number of steps to take (we assume one step takes ~2ms)
 	arrivalTime = (hitFrame / fps) * 1000.0;
 	steps = int(arrivalTime / 2.0) - stepOffset;
 
-	// checking for step size to enforce minimum step size
+	// realize that if steps less than min steps, 
+	// arm will not reach location in time to hit the puck!
 	if (steps < minSteps) {
-		steps = minSteps;
+		return emptyPath; // jump out if won't reach in time
 	}
 
-	///////////////////////////////////////
-	// Compute paths based on the set mode
+	// Compute paths based on the set mode assuming enough steps
 	if      (hitType == "block")
 	{
-		std::vector<Vec_double> blockPath = computePath(arm2Pos, hitPoint, steps);
+		std::vector<Vec_double> blockPath;
+		blockPath = computePath(arm2Pos, hitPoint, steps); // compute direct path to puck
+
 		return blockPath;
+	}
+	else if (hitType == "hit")
+	{
+		double slope; 			// slope of the line connecting puck hit point and puck target point
+		Vec_double hitEndPoint; // end point of the hit path which is past the puck on the line towards the target
+
+		slope = (hitPoint.y - arm2Pos.y)  / (hitPoint.x - arm2Pos.x);
+
+		hitEndPoint.y = 35.0;
+		hitEndPoint.x = ( (hitEndPoint.y - hitPoint.y) / slope ) + hitPoint.x;
+
+		std::vector<Vec_double> blockPath; // path from the current arm position to the puck intercept
+		std::vector<Vec_double> hitPath;   // continue through the puck a number of steps
+		std::vector<Vec_double> fullPath;  // concatenation of the above two paths 
+
+		blockPath = computePath(arm2Pos, hitPoint, steps);   // compute path to puck to "block"
+		hitPath   = computePath(hitPoint, hitEndPoint, 100); // compute path to hit through puck 
+
+		fullPath.reserve( blockPath.size() + hitPath.size() ); // preallocate memory
+		fullPath.insert( fullPath.end(), blockPath.begin(), blockPath.end() );
+		fullPath.insert( fullPath.end(), hitPath.begin(), hitPath.end() );
+
+		return fullPath;
 	}
 	else if (hitType == "block+hit")
 	{
-		// not sure how this is going to work yet
-		//std::vector<Vec_double> blockPath = computePath(arm2Pos, hitPoint, steps);
-		//std::vector<Vec_double> hitPath = computePath(hit, hitPoint, steps);
-		std::vector<Vec_double> emptyPath;
-		return emptyPath;
+		double slope; 			  // slope of the line connecting puck hit point and puck target point
+		Vec_double hitEndPoint;   // end point of the hit path which is past the puck on the line towards the target
+
+		slope = (targetPoint.y - hitPoint.y)  / (targetPoint.x - hitPoint.x);
+
+		hitEndPoint.y = 35.0;
+		hitEndPoint.x = ( (hitEndPoint.y - hitPoint.y) / slope ) + hitPoint.x;
+
+		std::vector<Vec_double> blockPath; // path from the current arm position to the puck intercept
+		std::vector<Vec_double> hitPath;   // path from the block to point past the puck towards target
+		std::vector<Vec_double> fullPath;  // concatenation of the above two paths 
+
+		blockPath = computePath(arm2Pos, hitPoint, steps/2); // compute path to puck
+		hitPath   = computePath(hitPoint, hitEndPoint, steps/2); // quickly hit puck towards target
+
+		// pack the two paths into a sigle vector
+		fullPath.reserve( blockPath.size() + hitPath.size() ); // preallocate memory
+		fullPath.insert( fullPath.end(), blockPath.begin(), blockPath.end() );
+		fullPath.insert( fullPath.end(), hitPath.begin(), hitPath.end() );
+
+		return fullPath;
 	}
-	else if (hitType == "hit")
+	else if (hitType == "swing")
 	{
 		double slope; 			  // slope of the line connecting puck hit point and puck target point
 		Vec_double hitStartPoint; // start point of the hit path which is behind the puck aimed at the target
@@ -198,7 +247,7 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 			if (hitStartPoint.y < ylim) // check if y value is valid
 			{
 				hitStartPoint.y = ylim;
-				hitStartPoint.x = (ylim - hitPoint.y) + hitPoint.x;
+				hitStartPoint.x = ( ylim - hitPoint.y / slope ) + hitPoint.x;
 			}
 		}
 		else  // positive slope
@@ -220,7 +269,7 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 		std::vector<Vec_double> hitPath;  // path from start point behind puck to point past the puck towards target
 		std::vector<Vec_double> fullPath; // concatenation of the above two paths 
 
-		hitPath = computePath(hitStartPoint, hitEndPoint, steps/2);
+		hitPath  = computePath(hitStartPoint, hitEndPoint, steps/2);
 		initPath = computePath(arm2Pos, hitStartPoint, steps/2);
 
 		// pack the two paths into a sigle vector
@@ -232,9 +281,7 @@ std::vector<Vec_double> TivaController::computeHitPath(std::vector<Vec_double> t
 	}
 	else
 	{
-		throw std::invalid_argument("invalid hit type - must be 'block', 'block+hit', or 'hit'.");
-		//std::vector<Vec_double> emptyPath;
-		//return emptyPath;
+		throw std::invalid_argument("invalid hit type - must be 'block', 'hit, 'block+hit', or 'swing'.");
 	}
 }
 
@@ -269,8 +316,8 @@ int main() {
 	secondPos.x = 30.0;
 	secondPos.y = 85.0;
 
-	thirdPos.x = 27.5;
-	thirdPos.y = 70.0;
+	thirdPos.x = 29.5;
+	thirdPos.y = 82.0;
 
 	std::vector<Vec_double> points;
 	points.push_back(initPos);
@@ -285,7 +332,7 @@ int main() {
 	double heightCm = 136.0;
 	Puck puck = Puck(points, initAcl, radius, 1.0, widthCm, heightCm);
 
-	std::cout << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
+	std::cout << "vel: " << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
 
 	// vector to hold trajectory points
 	std::vector<Vec_double> trajectory;
@@ -293,12 +340,6 @@ int main() {
 	// vector to hold path points
 	std::vector<Vec_double> path;
 	trajectory = puck.computeTrajectory(60);
-
-	std::cout << "trajectory" << std::endl;
-
-	for (auto point : trajectory) {
-		//std::cout << point.x << " " << point.y << std::endl;
-	}
 
 	// Now let's hit a puck
 	std::vector<Vec_double> hitPath;
@@ -308,14 +349,19 @@ int main() {
 	targetPoint.x = 33.0;
 	targetPoint.y = 136.0;
 
-	hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0, 25, 10, 10, 100, "block");
+	hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0, 25, 10, 10, 100, "hit");
 
-	std::cout << "hit path" << std::endl;
-
-	for (auto point : hitPath) {
-		std::cout << point.x << " " << point.y << std::endl;
+	if (hitPath.size() > 0 )
+	{
+		std::cout << "hit path" << std::endl;
+		for (auto point : hitPath) {
+			std::cout << point.x << " " << point.y << std::endl;
+		}
 	}
-
+	else 
+	{
+		std::cout << "no valid hit path" << std::endl;
+	}
 	return 0;
 }
 */

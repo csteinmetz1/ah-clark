@@ -482,7 +482,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					disappear = 0;
 					continue;
 				}
-				start = clock();
+
 				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
 
 				// vector to hold trajectory points
@@ -499,28 +499,27 @@ static DWORD WINAPI ArmThread(LPVOID)
 				Vec_double targetPoint;
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
-				//Dylan is a wienie and he knows it
+				//	Dylan is a wienie and he knows it - don't be mean
 
-				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, 35.0, 10.0, 10.0, 200, "block");
-				//blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, 25.0, 10.0, 10.0, 300, "hit");
-				end = clock();
-				//cout << "clock time: " << ((double)(end - start)) / CLOCKS_PER_SEC << endl;
-				
+				double yhit 	= 25.0;
+				double xlim 	= 10.0;
+				double ylim 	= 10.0;
+				double minSteps = 200;
+				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, yhit, xlim, ylim, minStep, "block");
+
 				if (blockPath.size() > 0) // check if the path contains points
 				{
-					//std::cout << "hit path" << std::endl;
-					hit_location = blockPath.back();
-
-					//for (auto point : blockPath)
-					//{
-					//	//std::cout << point.x << " " << point.y << std::endl;
-					//	receiver.GetData(&pkin);
-					//	Tiva.moveArm(point, false);
-					//	pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-					//	pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-					//	sender.SendData(&pkout);
-					//	Sleep(1);
-					//}
+					hit_location = blockPath.back(); // send hit location to be printed on the screen as green dot
+					for (auto point : blockPath)
+					{
+						//std::cout << point.x << " " << point.y << std::endl;
+						receiver.GetData(&pkin);
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
 					home_status = 0;
 					arm_comm = 0;
 				}
