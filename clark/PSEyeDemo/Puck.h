@@ -16,6 +16,7 @@ class Puck
 		Vec_double getPosition() const;
 		Vec_double getVelocity() const;
 		Vec_double getAcceleration() const;
+		std::vector<Vec_double> getTrajectory() const;
 
 		// setter methods
 		void setPosition(Vec_double newPos);
@@ -30,7 +31,7 @@ class Puck
 		void move();
 		void checkBoundary();
 		void computeVelocity(std::vector<Vec_double> points);
-		std::vector<Vec_double> computeTrajectory(int estimation_size);
+		void computeTrajectory();
 		static std::tuple<double, double> leastSquaresFit(std::vector<Vec_double> points);
 
 		// Constructor
@@ -41,6 +42,7 @@ class Puck
 		Vec_double pos;
 		Vec_double vel;
 		Vec_double acl;
+		std::vector<Vec_double> traj;
 		double unitsPerCm;
 		double radius;
 		double rinkWidth;

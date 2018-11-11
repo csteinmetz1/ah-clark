@@ -8,6 +8,7 @@ Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius,
 		   double unitsPerCm, double widthCm, double heightCm) {
 	setPosition(points.back());
 	computeVelocity(points);
+	computeTrajectory();
 	setAcceleration(initAcl);
 	setRadius(radius);
 	setUnitsPerCm(unitsPerCm);
@@ -19,10 +20,15 @@ Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius,
 Vec_double Puck::getPosition() const {return pos;}
 Vec_double Puck::getVelocity() const {return vel;}
 Vec_double Puck::getAcceleration() const {return acl;}
+std::vector<Vec_double> Puck::getTrajectory() const {return traj;}
 
 // setter methods
 void Puck::setPosition(Vec_double newPos) {pos = newPos;}
-void Puck::setVelocity(Vec_double newVel) {vel = newVel;}
+void Puck::setVelocity(Vec_double newVel) 
+{
+	vel = newVel;
+	computeTrajectory();
+}
 void Puck::setAcceleration(Vec_double newAcl) {acl = newAcl;}
 void Puck::setRadius(double newRadius) {radius = newRadius;}
 void Puck::setUnitsPerCm(double newUnitsPerCm) {unitsPerCm = newUnitsPerCm;}
@@ -54,28 +60,28 @@ void Puck::checkBoundary()
 		vel.x = -1.0 * vel.x;
 	}
 	// bottom wall
-	else if (pos.y + radius < 0.0) {
-		pos.y = 0.0 + radius;
-		vel.y = -1.0 * vel.y;
-	}
+	//else if (pos.y + radius < 0.0) {
+	//	pos.y = 0.0 + radius;
+	//	vel.y = -1.0 * vel.y;
+	//}
 	// top wall
-	else if (pos.y + radius > rinkHeight)
-	{
-		pos.y = rinkHeight - radius;
-		vel.y = -1.0 * vel.y;
-	}
+	//else if (pos.y + radius > rinkHeight)
+	//{
+	//	pos.y = rinkHeight - radius;
+	//	vel.y = -1.0 * vel.y;
+	//}
 	// our goal
 	//else if (pos.y + radius > rinkHeight & pos.x < )
 	//{
-  //	pos.y = rinkHeight - radius;
+    //	pos.y = rinkHeight - radius;
 	//	vel.y = -vel.y;
 	//}
 	// opponent goal
 	//else if (pos.y + radius > rinkHeight)
 	//{
 	//	pos.y = rinkHeight - radius;
-  //	vel.y = -vel.y;
-  //}
+    //	vel.y = -vel.y;
+    //}
 }
 
 void Puck::computeVelocity(std::vector<Vec_double> points) 
@@ -94,20 +100,28 @@ void Puck::computeVelocity(std::vector<Vec_double> points)
 
 	//std::cout << finalPos.x << " " << finalPos.y << std::endl;
 
-	vel.x = (finalPos.x - initPos.x) / double(points.size());
-	vel.y = (finalPos.y - initPos.y) / double(points.size());
-
+	vel.x = (finalPos.x - initPos.x) / double(points.size()-1);
+	vel.y = (finalPos.y - initPos.y) / double(points.size()-1);
 }
 
-std::vector<Vec_double> Puck::computeTrajectory(int estimation_size) 
+void Puck::computeTrajectory() 
 {
 
-	std::vector<Vec_double> trajectory;
-	for ( int frame = 0; frame < estimation_size; frame++ ) {
-		move();
-		trajectory.push_back(getPosition());
+	//std::vector<Vec_double> trajectory;
+	//for ( int frame = 0; frame < estimation_size; frame++ ) {
+	//	move();
+	//	trajectory.push_back(getPosition());
+	//}
+
+	traj.clear(); // clear trajectory predicitions
+	Vec_double current_pos = pos; // hold future position
+
+	while ( current_pos.y > 0 )
+	{
+		current_pos.x += vel.x;
+		current_pos.y += vel.y;
+		traj.push_back(current_pos);
 	}
-	return trajectory;
 }
 
 std::tuple<double, double> Puck::leastSquaresFit(std::vector<Vec_double> points)
@@ -153,8 +167,6 @@ std::tuple<double, double> Puck::leastSquaresFit(std::vector<Vec_double> points)
 
 	a = ( (sum_y * sum_x_sqrd) - (sum_x * sum_xy) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
 	b = ( (n * sum_xy) - (sum_x * sum_y) ) / ( (n * sum_x_sqrd) - pow(sum_x, 2) );
-
-	//std::cout << a << " " << b << std::endl;
 
 	auto fit = std::make_tuple(a, b);
 

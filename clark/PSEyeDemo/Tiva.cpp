@@ -173,6 +173,7 @@ Vec_double targetPoint, double fps, double yhit, double xlim, double ylim, int m
 	// realize that if steps less than min steps, 
 	// arm will not reach location in time to hit the puck!
 	if (steps < minSteps) {
+		// idea - maybe move arm to a goal block location if it can't hit it?
 		return emptyPath; // jump out if won't reach in time
 	}
 
@@ -310,14 +311,14 @@ int main() {
 	Vec_double thirdPos;
 	Vec_double initAcl;
 
-	initPos.x = 33.0;
-	initPos.y = 100.0;
+	initPos.x = 30.0;
+	initPos.y = 120.0;
 
-	secondPos.x = 30.0;
-	secondPos.y = 85.0;
+	secondPos.x = 29.0;
+	secondPos.y = 115.0;
 
-	thirdPos.x = 29.5;
-	thirdPos.y = 82.0;
+	thirdPos.x = 28.0;
+	thirdPos.y = 110.0;
 
 	std::vector<Vec_double> points;
 	points.push_back(initPos);
@@ -327,19 +328,12 @@ int main() {
 	initAcl.x = 0;
 	initAcl.y = 0;
 
-	double radius = 0.0;
+	double radius = 3.5;
 	double widthCm = 66.0;
 	double heightCm = 136.0;
 	Puck puck = Puck(points, initAcl, radius, 1.0, widthCm, heightCm);
 
 	std::cout << "vel: " << puck.getVelocity().x << " " << puck.getVelocity().y << std::endl;
-
-	// vector to hold trajectory points
-	std::vector<Vec_double> trajectory;
-
-	// vector to hold path points
-	std::vector<Vec_double> path;
-	trajectory = puck.computeTrajectory(60);
 
 	// Now let's hit a puck
 	std::vector<Vec_double> hitPath;
@@ -349,7 +343,12 @@ int main() {
 	targetPoint.x = 33.0;
 	targetPoint.y = 136.0;
 
-	hitPath = Tiva.computeHitPath(trajectory, targetPoint, 30.0, 25, 10, 10, 100, "hit");
+	for ( auto point : puck.getTrajectory() )
+	{
+		//std::cout << point.x << " " << point.y << std::endl;
+	}
+
+	hitPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, 30.0, 25, 10, 10, 100, "hit");
 
 	if (hitPath.size() > 0 )
 	{
