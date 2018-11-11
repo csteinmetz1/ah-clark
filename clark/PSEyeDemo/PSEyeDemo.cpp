@@ -44,6 +44,8 @@ typedef struct{
 
 static DWORD WINAPI CaptureThread(LPVOID ThreadPointer); // ah this is how you get data back and forth between threads 
 static DWORD WINAPI ArmThread(LPVOID);
+static DWORD WINAPI TrajectoryThread(LPVOID);
+
 void moveArm(CUDPReceiver *, CUDPSender *, Vec_double , PACKIN , PACKOUT , TivaController *);
 void inst_taskbars(void);
 
@@ -134,6 +136,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		return false;
 	}
 	_hThread = CreateThread(NULL, 0, &ArmThread, NULL, 0, 0);
+	if (_hThread == NULL)
+	{
+		printf("Failed to create Arm Control thread...");
+		getchar();
+		return false;
+	}
+
+	_hThread = CreateThread(NULL, 0, &TrajectoryThread, NULL, 0, 0);
 	if (_hThread == NULL)
 	{
 		printf("Failed to create Arm Control thread...");
@@ -421,8 +431,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 		int sample_size = 4;				// number of samples to use for velocity prediction
 		Vec_double point;					// a single puck point
 		vector<Vec_double> puck_points;		// vector of samples puck points
-		std::vector<Vec_double> trajectory; // vector of future puck points
-		int estimation_size = 30;			// number of frames to look ahead into the future
 
 		// arm home position
 		Vec_double home;
@@ -485,13 +493,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
 
-				// vector to hold trajectory points
-				std::vector<Vec_double> trajectory;
+				traj_line = puck.getTrajectory();
 
-				// vector to hold path points
-				std::vector<Vec_double> path;
-				trajectory = puck.computeTrajectory(estimation_size);
-				traj_line = trajectory;
 				// Now let's hit a puck
 				std::vector<Vec_double> hitPath, blockPath;
 
@@ -499,20 +502,31 @@ static DWORD WINAPI ArmThread(LPVOID)
 				Vec_double targetPoint;
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
-				//	Dylan is a wienie and he knows it - don't be mean
+				//	Dylan is a wienie and he knows it - '  mean
 
-				double yhit 	= 25.0;
+				double yhit 	= 20.0;
 				double xlim 	= 10.0;
 				double ylim 	= 10.0;
 				double minSteps = 200;
-				blockPath = Tiva.computeHitPath(trajectory, targetPoint, (double)FPS, yhit, xlim, ylim, minStep, "block");
+				blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block");
 
-				if (blockPath.size() > 0) // check if the path contains points
+				if (blockPath.size() > 0 && 0) // check if the path contains points
 				{
 					hit_location = blockPath.back(); // send hit location to be printed on the screen as green dot
 					for (auto point : blockPath)
 					{
 						//std::cout << point.x << " " << point.y << std::endl;
+						receiver.GetData(&pkin);
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
+					vector<Vec_double> homePath;
+					homePath = Tiva.computePath(Tiva.getArm2Location(), home, 200);
+					for (auto point : homePath)
+					{
 						receiver.GetData(&pkin);
 						Tiva.moveArm(point, false);
 						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
@@ -526,6 +540,13 @@ static DWORD WINAPI ArmThread(LPVOID)
 	
 			}
 		}
+	}
+}
+static DWORD WINAPI TrajectoryThread(LPVOID)
+{
+	while (1)
+	{
+
 	}
 }
 

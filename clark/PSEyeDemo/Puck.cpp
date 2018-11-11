@@ -115,11 +115,26 @@ void Puck::computeTrajectory()
 
 	traj.clear(); // clear trajectory predicitions
 	Vec_double current_pos = pos; // hold future position
+	Vec_double current_vel = vel; // hold future velocity
 
-	while ( current_pos.y > 0 )
+	while ( current_pos.y > 0 & traj.size() < 100 )
 	{
-		current_pos.x += vel.x;
-		current_pos.y += vel.y;
+		current_pos.x += current_vel.x;
+		current_pos.y += current_vel.y;
+
+		// right wall
+		if (current_pos.x + radius < 0.0)
+		{
+			current_pos.x = 0.0 + radius;
+			current_vel.x = -1.0 * current_vel.x;
+		}
+		// left wall
+		else if (current_pos.x + radius > rinkWidth)
+		{
+			current_pos.x = rinkWidth - radius;
+			current_vel.x = -1.0 * current_vel.x;
+		}
+
 		traj.push_back(current_pos);
 	}
 }
