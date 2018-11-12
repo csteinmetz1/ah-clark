@@ -163,7 +163,7 @@ Vec_double targetPoint, double fps, double yhit, double xlim, double ylim, int m
 	int stepOffset;     // how much earlier the paddle arrives in steps
 	int steps; 			// path steps to take to reach end point
 
-	timeOffset = 50.0; 					// ms
+	timeOffset = 100.0; 					// ms
 	stepOffset = int(timeOffset / 2.0); // steps
 
 	// compute number of steps to take (we assume one step takes ~2ms)
@@ -222,8 +222,8 @@ Vec_double targetPoint, double fps, double yhit, double xlim, double ylim, int m
 		std::vector<Vec_double> hitPath;   // path from the block to point past the puck towards target
 		std::vector<Vec_double> fullPath;  // concatenation of the above two paths 
 
-		blockPath = computePath(arm2Pos, hitPoint, steps/2); // compute path to puck
-		hitPath   = computePath(hitPoint, hitEndPoint, steps/2); // quickly hit puck towards target
+		blockPath = computePath(arm2Pos, hitPoint, int((3.0/4.0)*steps));	 // compute path to puck
+		hitPath   = computePath(hitPoint, hitEndPoint, int((1.0/4.0)*steps)); // quickly hit puck towards target
 
 		// pack the two paths into a sigle vector
 		fullPath.reserve( blockPath.size() + hitPath.size() ); // preallocate memory

@@ -473,7 +473,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				std::vector<Vec_double> hitPath, blockPath;
 
 				// Threshold to recompute path
-				double velocityThreshold = 0.5;
+				double velocityThreshold = 1.0;
 
 				// Define target - the center of the goal
 				Vec_double targetPoint;
@@ -501,7 +501,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				}
 				else
 				{
-					blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block");
+					blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block+hit");
 				}
 
 				//christian is a door
