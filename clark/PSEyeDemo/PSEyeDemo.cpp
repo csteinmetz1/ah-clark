@@ -81,6 +81,14 @@ vector<Vec_double> traj_line;  //used for debugging
 int FPS;
 Vec_double hit_location;
 
+
+// Puck initialization variables
+double radius = 3.15;		// puck radius in cm
+double widthCm = 66.0;		// rink width in cm
+double heightCm = 134.0;	// rink height in cm
+
+Puck puck(radius, 1.0, widthCm, heightCm);
+
 //////////////////////////////////////////////////
 
 // main function that ties everything together, threads and camera functionality will be initiated here
@@ -382,6 +390,8 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 static DWORD WINAPI ArmThread(LPVOID)
 {
 
+	Sleep(1000);
+
 	if (!InitUDPLib())
 	{
 		cout << "UDP Failed" << endl;
@@ -419,14 +429,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 		// Define buffers for input and output
 		PACKIN pkin;
 		PACKOUT pkout;
-
-		// Puck initialization variables
-		double radius = 3.15;		// puck radius in cm
-		double widthCm = 66.0;		// rink width in cm
-		double heightCm = 134.0;	// rink height in cm
-		Vec_double initAcl;			// default puck acceleration 
-		initAcl.x = 0.0;			// we may include this in the future
-		initAcl.y = 0.0;
 
 		int sample_size = 4;				// number of samples to use for velocity prediction
 		Vec_double point;					// a single puck point
@@ -467,86 +469,107 @@ static DWORD WINAPI ArmThread(LPVOID)
 			}
 			else if (arm_comm == 1)
 			{
-				puck_points.clear(); // remove all previous points
-				//Sleep(5);
-				// acquire puck locations over sample size
-				while (puck_points.size() < sample_size)
-				{
-					frame_number = 1;
-					if (sendx < 0 || sendy < 0) //the puck is gone
-					{
-						disappear = 1;
-						break;
-					}
-					point.x = sendx;
-					point.y = sendy;
-					puck_points.push_back(point);
-					while (frame_number % 2 != 0) {};
-				}
-				//if we get garbage values then we need to continue to the next iteration in our loop
-				if (disappear == 1)
-				{
-					arm_comm = 0;
-					disappear = 0;
-					continue;
-				}
-
-				Puck puck = Puck(puck_points, initAcl, radius, 1.0, widthCm, heightCm);
-
-				traj_line = puck.getTrajectory();
-
 				// Now let's hit a puck
 				std::vector<Vec_double> hitPath, blockPath;
+
+				// Threshold to recompute path
+				double velocityThreshold = 0.5;
 
 				// Define target - the center of the goal
 				Vec_double targetPoint;
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
-				//	Dylan is a wienie and he knows it - '  mean
 
 				double yhit 	= 20.0;
 				double xlim 	= 10.0;
 				double ylim 	= 10.0;
 				double minSteps = 200;
-				blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block");
 
-				if (blockPath.size() > 0 && 0) // check if the path contains points
+				if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
 				{
-					hit_location = blockPath.back(); // send hit location to be printed on the screen as green dot
+					if (sendx > 0 && sendy > 0)
+					{
+						Vec_double puck_point;
+						puck_point.x = sendx;
+						puck_point.y = sendy;
+						blockPath = Tiva.computePath(Tiva.getArm2Location(), puck_point, 300);
+					}
+				}
+				else if (puck.getVelocity().y > 0 && sendy > 40)
+				{
+					blockPath = Tiva.computePath(Tiva.getArm2Location(), home, 300);
+				}
+				else
+				{
+					blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block");
+				}
+
+				//christian is a door
+				if (blockPath.size() > 0 && 1) // check if the path contains points
+				{
+					// store starting velcoity to check against updated value
+					Vec_double start_vel = puck.getVelocity();
+
+					// send hit location to be printed on the screen as green dot
+					hit_location = blockPath.back(); 
+
 					for (auto point : blockPath)
 					{
-						//std::cout << point.x << " " << point.y << std::endl;
-						receiver.GetData(&pkin);
-						Tiva.moveArm(point, false);
-						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-						sender.SendData(&pkout);
-						Sleep(1);
-					}
-					vector<Vec_double> homePath;
-					homePath = Tiva.computePath(Tiva.getArm2Location(), home, 200);
-					for (auto point : homePath)
-					{
-						receiver.GetData(&pkin);
-						Tiva.moveArm(point, false);
-						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-						sender.SendData(&pkout);
-						Sleep(1);
+						// check if current path is valid for latest velocity
+						if ( abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
+						{
+							blockPath.clear();
+							break;
+						}
+						else
+						{
+							receiver.GetData(&pkin);
+							Tiva.moveArm(point, false);
+							pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+							pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+							sender.SendData(&pkout);
+							Sleep(1);
+						}
 					}
 					home_status = 0;
 					arm_comm = 0;
 				}
-	
 			}
 		}
 	}
 }
 static DWORD WINAPI TrajectoryThread(LPVOID)
 {
-	while (1)
-	{
+	Sleep(1000);
+	int sample_size = 4;			// number of frames to use
+	Vec_double point;				// placeholder for puck location
+	vector<Vec_double> puck_points; // vector of sampled puck locations
 
+	while (1)
+	{	// sample frames 
+		while (puck_points.size() < sample_size)
+		{
+			frame_number = 1;
+
+			// the puck is gone
+			if (sendx < 0 || sendy < 0) 
+			{
+				// not sure of the best thing to do here
+				puck_points.clear();
+			}
+			// sample a frame
+			else 
+			{
+				point.x = sendx;
+				point.y = sendy;
+				puck_points.push_back(point);
+				while (frame_number % 2 != 0) {};
+			}
+		}
+		puck.updatePuck(puck_points);		// update the position, velocity, and trajectory
+		traj_line = puck.getTrajectory();	// copy trajectory to be drawn on image
+		puck_points.clear();				// clear out vector to get new samples
+		//cout << "update trajectory" << endl;
 	}
 }
 

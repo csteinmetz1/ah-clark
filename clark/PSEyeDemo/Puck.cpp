@@ -4,12 +4,12 @@
 #include <tuple>
 
 // Constructor
-Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius, 
-		   double unitsPerCm, double widthCm, double heightCm) {
-	setPosition(points.back());
-	computeVelocity(points);
-	computeTrajectory();
-	setAcceleration(initAcl);
+Puck::Puck(double radius, double unitsPerCm, double widthCm, double heightCm)
+{
+	Vec_double initAcl;
+	initAcl.x = 0.0;
+	initAcl.y = 0.0;
+
 	setRadius(radius);
 	setUnitsPerCm(unitsPerCm);
 	setRinkWidthCm(widthCm);
@@ -20,7 +20,7 @@ Puck::Puck(std::vector<Vec_double> points, Vec_double initAcl, double radius,
 Vec_double Puck::getPosition() const {return pos;}
 Vec_double Puck::getVelocity() const {return vel;}
 Vec_double Puck::getAcceleration() const {return acl;}
-std::vector<Vec_double> Puck::getTrajectory() const {return traj;}
+std::vector<Vec_double> Puck::getTrajectory() { std::lock_guard<std::mutex> lock(mtx); return traj;}
 
 // setter methods
 void Puck::setPosition(Vec_double newPos) {pos = newPos;}
@@ -34,6 +34,13 @@ void Puck::setRadius(double newRadius) {radius = newRadius;}
 void Puck::setUnitsPerCm(double newUnitsPerCm) {unitsPerCm = newUnitsPerCm;}
 void Puck::setRinkWidthCm(double newRinkWidthCm) {rinkWidth = newRinkWidthCm * unitsPerCm;}
 void Puck::setRinkHeightCm(double newRinkHeightCm) {rinkHeight = newRinkHeightCm * unitsPerCm;}
+
+void Puck::updatePuck(std::vector<Vec_double> points)
+{
+	setPosition(points.back()); // set current position to the last sampled value
+	computeVelocity(points);	// compute the updated velocity
+	computeTrajectory();		// update the trajectory based on new data
+}
 
 void Puck::move() 
 {
@@ -86,6 +93,7 @@ void Puck::checkBoundary()
 
 void Puck::computeVelocity(std::vector<Vec_double> points) 
 {
+	std::lock_guard<std::mutex> lock(mtx);
 	auto fit = leastSquaresFit(points);
 
 	Vec_double initPos, finalPos;
@@ -106,13 +114,13 @@ void Puck::computeVelocity(std::vector<Vec_double> points)
 
 void Puck::computeTrajectory() 
 {
-
 	//std::vector<Vec_double> trajectory;
 	//for ( int frame = 0; frame < estimation_size; frame++ ) {
 	//	move();
 	//	trajectory.push_back(getPosition());
 	//}
 
+	std::lock_guard<std::mutex> lock(mtx);
 	traj.clear(); // clear trajectory predicitions
 	Vec_double current_pos = pos; // hold future position
 	Vec_double current_vel = vel; // hold future velocity
