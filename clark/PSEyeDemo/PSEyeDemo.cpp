@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <ctime>
 // OpenCV
 #include <cv.h>
 #include <cxcore.h>
@@ -19,7 +20,6 @@
 // UDP
 #include "xPCUDPSock.h"
 #include "UDP_setup.h"
-#include <ctime>
 
 using namespace std; //allows aceess to all std lib functions without using the namespace std::
 using namespace cv; // allows ... without using namespace cv::
@@ -77,10 +77,8 @@ double sendy;
 
 int arm_comm = 0;
 int frame_number;
-vector<Vec_double> traj_line;  //used for debugging 
 int FPS;
 Vec_double hit_location;
-
 
 // Puck initialization variables
 double radius = 3.15;		// puck radius in cm
@@ -335,7 +333,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				//gather the area and XY center of the centroid/contour
 				oMoments = moments(final_thresh, true);
-				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found, traj_line);
+				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found, puck.getTrajectory());
 
 				//display the XY coordinates of the puck in real time (according to the warped image)
 				//cout << posX << "\t" << posY << endl;
@@ -452,7 +450,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 			{
 				if (home_status == 0)
 				{
-					std::vector<Vec_double> arm_path = Tiva.computePath(Tiva.getArm2Location(), home, 250);
+					std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 250);
 
 					for (auto point : arm_path) 
 					{
@@ -463,7 +461,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 						sender.SendData(&pkout);
 						Sleep(1);
 					}
-					traj_line.clear();
 					home_status = 1;
 				}
 			}
@@ -492,16 +489,16 @@ static DWORD WINAPI ArmThread(LPVOID)
 						Vec_double puck_point;
 						puck_point.x = sendx;
 						puck_point.y = sendy;
-						blockPath = Tiva.computePath(Tiva.getArm2Location(), puck_point, 300);
+						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), puck_point, 250);
 					}
 				}
 				else if (puck.getVelocity().y > 0 && sendy > 40)
 				{
-					blockPath = Tiva.computePath(Tiva.getArm2Location(), home, 300);
+					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
 				}
 				else
 				{
-					blockPath = Tiva.computeHitPath(puck.getTrajectory(), targetPoint, (double)FPS, yhit, xlim, ylim, minSteps, "block+hit");
+					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
 				}
 
 				//christian is a door
@@ -546,7 +543,11 @@ static DWORD WINAPI TrajectoryThread(LPVOID)
 	vector<Vec_double> puck_points; // vector of sampled puck locations
 
 	while (1)
-	{	// sample frames 
+	{	
+		// start the clock
+		clock_t begin = clock();
+
+		// sample frames 
 		while (puck_points.size() < sample_size)
 		{
 			frame_number = 1;
@@ -554,8 +555,8 @@ static DWORD WINAPI TrajectoryThread(LPVOID)
 			// the puck is gone
 			if (sendx < 0 || sendy < 0) 
 			{
-				// not sure of the best thing to do here
-				puck_points.clear();
+				puck_points.clear();	 // clear sampled points
+				clock_t begin = clock(); // restart the clock
 			}
 			// sample a frame
 			else 
@@ -566,10 +567,13 @@ static DWORD WINAPI TrajectoryThread(LPVOID)
 				while (frame_number % 2 != 0) {};
 			}
 		}
-		puck.updatePuck(puck_points);		// update the position, velocity, and trajectory
-		traj_line = puck.getTrajectory();	// copy trajectory to be drawn on image
-		puck_points.clear();				// clear out vector to get new samples
-		//cout << "update trajectory" << endl;
+
+		clock_t end = clock(); // stop the clock
+		double elapsedTime = double(end - begin) / CLOCKS_PER_SEC;
+		double sampleTime = elapsedTime / double(puck_points.size());
+
+		puck.updatePuck(puck_points, sampleTime);		// update the position, velocity, and trajectory
+		puck_points.clear();							// clear out vector to get new samples
 	}
 }
 
@@ -591,14 +595,3 @@ void inst_taskbars(void)
 	cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
 	cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
 }
-
-void moveArm(CUDPReceiver *receiver, CUDPSender *sender, Vec_double point, PACKIN pkin, PACKOUT pkout, TivaController *Tiva)
-{
-	receiver->GetData(&pkin);
-	Tiva->moveArm(point, false);
-	pkout.flt1 = (float)Tiva->getMotor1AngleDegrees();
-	pkout.flt2 = (float)Tiva->getMotor2AngleDegrees();
-	sender->SendData(&pkout);
-	Sleep(1);
-}
-

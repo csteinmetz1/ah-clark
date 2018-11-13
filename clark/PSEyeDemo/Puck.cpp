@@ -1,4 +1,4 @@
-#include "stdafx.h"
+//#include "stdafx.h"
 #include "Puck.h"
 #include <iostream>
 #include <tuple>
@@ -17,12 +17,14 @@ Puck::Puck(double radius, double unitsPerCm, double widthCm, double heightCm)
 }
 
 // getter methods
+double Puck::getSampleTime() const {return sampleTime;}
 Vec_double Puck::getPosition() const {return pos;}
 Vec_double Puck::getVelocity() const {return vel;}
 Vec_double Puck::getAcceleration() const {return acl;}
 std::vector<Vec_double> Puck::getTrajectory() { std::lock_guard<std::mutex> lock(mtx); return traj;}
 
 // setter methods
+void Puck::setSampleTime(double newSampleTime) {sampleTime = newSampleTime;}
 void Puck::setPosition(Vec_double newPos) {pos = newPos;}
 void Puck::setVelocity(Vec_double newVel) 
 {
@@ -35,11 +37,12 @@ void Puck::setUnitsPerCm(double newUnitsPerCm) {unitsPerCm = newUnitsPerCm;}
 void Puck::setRinkWidthCm(double newRinkWidthCm) {rinkWidth = newRinkWidthCm * unitsPerCm;}
 void Puck::setRinkHeightCm(double newRinkHeightCm) {rinkHeight = newRinkHeightCm * unitsPerCm;}
 
-void Puck::updatePuck(std::vector<Vec_double> points)
+void Puck::updatePuck(std::vector<Vec_double> points, double sampleTime)
 {
-	setPosition(points.back()); // set current position to the last sampled value
-	computeVelocity(points);	// compute the updated velocity
-	computeTrajectory();		// update the trajectory based on new data
+	setSampleTime(sampleTime);	  // set the avg time elapsed for a sample point
+	setPosition(points.back());   // set current position to the last sampled value
+	computeVelocity(points);	  // compute the updated velocity
+	computeTrajectory();		  // update the trajectory based on new data
 }
 
 void Puck::move() 

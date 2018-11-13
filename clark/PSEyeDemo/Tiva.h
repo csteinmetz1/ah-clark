@@ -4,6 +4,7 @@
 #include <tuple>
 #include <string>
 #include <iostream> 
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include "Puck.h"
 
@@ -36,10 +37,16 @@ class TivaController
 		void resetArm();
 		void updateArmLocation();
 		void moveArm(Vec_double point, bool negative);
-		static std::vector<Vec_double> computePath(Vec_double start, Vec_double end, int steps);
-		std::vector<Vec_double> computeHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint,
-													  double fps, double yhit, double xlim, double ylim, int minSteps, std::string hitType);
 		std::tuple<double,double> computeKinematics(Vec_double point, bool negative);
+
+		// path methods
+		static std::tuple<Vec_double, int> findBlockPoint(std::vector<Vec_double> trajectory, double yblock);
+		std::vector<Vec_double> computeLinearPath(Vec_double start, Vec_double end, int steps);
+		
+		std::vector<Vec_double> computeBlockPath(std::vector<Vec_double> trajectory, double sampleTime, double yblock);
+		//std::vector<Vec_double> computeHitPath(std::vector<Vec_double> trajectory);
+		std::vector<Vec_double> computeBlockAndHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, double sampleTime, double yblock, double stepFactor);
+		std::vector<Vec_double> computeSwingPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, double sampleTime, double yblock, double stepFactor);
 
 		// Constructor
 		TivaController(double _unitsPerCm, double arm1Cm, double arm2Cm, double xOffsetCm, double yOffsetCm);
