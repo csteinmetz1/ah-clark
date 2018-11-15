@@ -9,7 +9,7 @@ As part of the final senior design course in ECE at Clemson, we were tasked with
 
 ## Overview
 
-* [Hardware schematic](docs/motor_control_schematic.pdf) 	- Full defition of the electrical subysystem
+* [Hardware schematic](docs/motor_control_schematic.pdf) 	- Full definition of the electrical subsystem
 * [Simulink model](motor_control/simulink/PID_Interactive_3.slx)	 - Model to be run on the Tiva microcontroller
 * [Basic arm control](motor_control/basic_xy)	- Simple program to control the position of the arm for testing
 * [Main gameplay code](clark/PSEyeDemo)	- Main program which includes gameplay logic and user interface
