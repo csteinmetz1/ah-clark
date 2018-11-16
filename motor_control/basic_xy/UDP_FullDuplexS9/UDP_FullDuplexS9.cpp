@@ -54,7 +54,7 @@ int _tmain(int argc, TCHAR* argv[])
 		char string[256];
 		char* pEnd;
 
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 30.5, -22.6);
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 36.0, -22.6);
 
 		Vec_double setPoint;
 		Vec_double home;

@@ -319,8 +319,8 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 				setup = 1;
 				warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
 				// flip image around the y axis
-				flip(warped_display, flipped_display, 1);
-				warped_display = flipped_display.clone();
+				//flip(warped_display, flipped_display, 1);
+				//warped_display = flipped_display.clone();
 
 				// this could possible be removed without error in functionality
 				imgHSV = warped_display.clone();
@@ -382,8 +382,8 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
 
-				flip(warped_display, flipped_display, 0);
-				flip(flipped_display, warped_display, 1);
+				//flip(warped_display, flipped_display, 0);
+				//flip(flipped_display, warped_display, 1);
 
 				*(Instance->warped_display) = warped_display;
 				*(Instance->binary_display) = final_thresh;
@@ -431,7 +431,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 	}
 	else {
 		//33.0 -10.0 (x offset , yoffset)
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 30.5, -22.6);   //modified 11/16/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 36, -22.6);   //modified 11/16/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
