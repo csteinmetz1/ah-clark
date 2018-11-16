@@ -89,7 +89,7 @@ double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
 
-bool essential_ops = true;
+bool essential_ops = false;
 
 //////////////////////////////////////////////////
 
@@ -431,7 +431,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 	}
 	else {
 		//33.0 -10.0 (x offset , yoffset)
-		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 31, -23);
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 30.5, -22.6);   //modified 11/16/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
