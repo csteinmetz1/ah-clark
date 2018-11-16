@@ -80,12 +80,16 @@ int frame_number;
 int FPS;
 Vec_double hit_location;
 
+vector<Vec_double> blockPath;
+
 // Puck initialization variables
 double radius = 3.15;		// puck radius in cm
 double widthCm = 66.0;		// rink width in cm
 double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
+
+bool essential_ops = true;
 
 //////////////////////////////////////////////////
 
@@ -239,7 +243,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			cout << "camera exception" << endl;
 		}
 		//Dispay warped and 
-		if (setup == 2)
+		if (setup == 2 && essential_ops)
 		{
 			try{
 				imshow("Warped", warped_display);
@@ -333,7 +337,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				//gather the area and XY center of the centroid/contour
 				oMoments = moments(final_thresh, true);
-				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found, puck.getTrajectory());
+				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found);
 
 				//display the XY coordinates of the puck in real time (according to the warped image)
 				//cout << posX << "\t" << posY << endl;
@@ -343,17 +347,47 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 					puck_found = 0;
 
 				// this is our tuning of the vision coordinates
-				sendx = (posX)/3.04762; 
-				sendy = (posY)/2.985;
+				sendx = (posX) / 3.04762;
+				sendy = (posY) / 2.985;
 				//cout << sendx << "\t" << sendy << endl;
 				// tell the arm we are ready
 				if (arm_comm == 0)
 					arm_comm = 1;
-				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
-				flip(warped_display, flipped_display, 0);
 
-				*(Instance->warped_display) = flipped_display;
+				//not essential
+				if (essential_ops)
+				{
+					vector<Vec_double>  trajectory = puck.getTrajectory();
+					vector<Vec_double> path = blockPath;
+					if (trajectory.size() > 0 && 1)
+					{
+						for (auto point : trajectory)
+						{
+							point.x = point.x * 3.04762;
+							point.y = point.y * 2.985;
+							circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
+						}
+					}
+
+					if (path.size() > 0 && 1)
+					{
+						for (auto point : path)
+						{
+							point.x = point.x * 3.04762;
+							point.y = point.y * 2.985;
+							circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
+						}
+					}
+
+
+				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
+
+				flip(warped_display, flipped_display, 0);
+				flip(flipped_display, warped_display, 1);
+
+				*(Instance->warped_display) = warped_display;
 				*(Instance->binary_display) = final_thresh;
+				}
 				setup = 2; // what does this do?
 			}
 
@@ -397,7 +431,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 	}
 	else {
 		//33.0 -10.0 (x offset , yoffset)
-		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 30, -23);
+		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 31, -23);
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -467,7 +501,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 			else if (arm_comm == 1)
 			{
 				// Now let's hit a puck
-				std::vector<Vec_double> hitPath, blockPath;
+				std::vector<Vec_double> hitPath;
 
 				// Threshold to recompute path
 				double velocityThreshold = 1.0;
