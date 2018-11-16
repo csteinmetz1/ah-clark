@@ -9,7 +9,7 @@
 #include "xPCUDPSock.h"
 #include <stdio.h>
 #include <string>
-#include <Tiva.h>
+#include "Tiva.h"
 
 #pragma pack(push,1) // Important! Tell the compiler to pack things up tightly 
 
@@ -50,11 +50,31 @@ int _tmain(int argc, TCHAR* argv[])
 		// Define buffers for input and output
 		PACKIN pkin;
 		PACKOUT pkout;
+		float x, y;
 		char string[256];
 		char* pEnd;
 
-		TivaController Tiva = TivaController(1.0, 46.8313, 25.4, 33.02, -26.67);
+		TivaController Tiva = TivaController(1.0, 46.6163, 25.0825, 32, -23);
+
 		Vec_double setPoint;
+		Vec_double home;
+
+		home.x = 0;
+		home.y = 0;
+
+		Tiva.moveArm(home, false);
+
+		std::vector<Vec_double> path;
+
+		receiver.GetData(&pkin);
+		Tiva.moveArm(home, false);
+
+		// repack the data
+		pkout.flt1 = float(Tiva.getMotor1AngleDegrees());
+		pkout.flt2 = float(Tiva.getMotor2AngleDegrees());
+
+		// send the repacked data through sender
+		sender.SendData(&pkout);
 
 		// Routing data endlessly
 		while (1)
@@ -70,20 +90,24 @@ int _tmain(int argc, TCHAR* argv[])
 			setPoint.x = x;
 			setPoint.y = y;
 
-			printf("\n");
+			path = Tiva.computeLinearPath(Tiva.getArm2Location(), setPoint, 300);
+
 			// prevent from running to fast
-			Sleep(1);
-			// get latest data from receiver
-			receiver.GetData(&pkin);
+			for (auto point : path)
+			{
+				Sleep(1);
+				// get latest data from receiver
+				receiver.GetData(&pkin);
 
-			Tiva.moveArm(setPoint, false);
+				Tiva.moveArm(point, false);
 
-			// repack the data
-			pkout.flt1 = Tiva.getMotor1AngleDegrees();
-			pkout.flt2 = Tiva.getMotor2AngleDegrees();
+				// repack the data
+				pkout.flt1 = float(Tiva.getMotor1AngleDegrees());
+				pkout.flt2 = float(Tiva.getMotor2AngleDegrees());
 
-			// send the repacked data through sender
-			sender.SendData(&pkout);
+				// send the repacked data through sender
+				sender.SendData(&pkout);
+			}
 		}
 	}
 	return nRetCode;
