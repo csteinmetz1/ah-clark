@@ -1,4 +1,4 @@
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <string>
 #include <stdexcept>
 #include "Tiva.h"
@@ -134,40 +134,111 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 	return path;
 }
 
-/*
-std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_double stop, int steps)
+
+std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_double stop, int steps, double rFactor)
 {
 	std::vector<Vec_double> path; 		// vector of points on linear path
 	Vec_double point;				    // point struct
-	double distance;		          	// distance of path
+	double arcLength;		          	// distance of path
 	double distancePerStep;				// distance to be travelled during each step
 
-	double u = 0;
+	// compute the midpoint between start and stop points
+	Vec_double midpoint;
+	midpoint.x = (start.x + stop.x) / 2.0;
+	midpoint.y = (start.y + stop.y) / 2.0;
 
-	if      ( curveType == "circle")
-	{
-		uEnd = 2 * M_PI;
-	}
-	else if ( curveType == "semi-circle")
-	{
-		uEnd = M_PI;
-	}
-	else if ( curveType == "quarter-circle")
-	{
+	std::cout << "midpoint x: " << midpoint.x << " y:" << midpoint.y << std::endl;
 
-	}
+	// compute line between start and stop points
+	double chord_slope = (stop.y - start.y)  / (stop.x - start.x);
 
-	while (u < M_PI) 
+	// compute perpendicular bisector slope
+	double bisect_slope = -(1.0 / chord_slope);
+
+	std::cout << "chord slope: " << chord_slope << " bisect slope: " << bisect_slope << std::endl;
+
+	// compute center of the fitted circle (this can have two solutions)
+	Vec_double center;
+
+	if (stop.x > start.x ) // positive angle direction 
 	{
-		point.x = radius * cos(u);
-		point.y = radius * sin(u);
-		path.push_back(point);
-		u += (M_PI/steps);
+		center.y = midpoint.y - (bisect_slope * rFactor);
+		center.x = midpoint.x - (1.0 * rFactor); 
+	}
+	else if (stop.x < start.x) // negative angle direction 
+	{
+		center.y = midpoint.y + (bisect_slope * rFactor); 
+		center.x = midpoint.x + (1.0 * rFactor); 
 	}
 
+	std::cout << "center x: " << center.x << " y: " << center.y << std::endl;
+
+	// find the radius of the circle (distance from center to start point)
+	double radius = sqrt(pow(center.x - start.x, 2) + pow(center.y - start.y, 2));
+
+	std::cout << "radius: " << radius << std::endl;
+
+	// find starting and ending angle 
+	double thetaStart = atan2( (start.y - center.y), (start.x - center.x) );
+	double thetaStop  = atan2( (stop.y - center.y), (stop.x - center.x) );
+
+	// turn all negative angles into positive angles
+	if ( thetaStart < 0 )
+	{
+		thetaStart += 2 * M_PI;
+	}
+	if (thetaStop < 0 )
+	{
+		thetaStop += 2 * M_PI;
+	}
+
+	std::cout << "thetaStart: "<< thetaStart << " thetaStop: " << thetaStop << std::endl;
+
+	// compute the distance per step based on arc length of path
+	arcLength = 2 * M_PI * radius * (abs(thetaStart - thetaStop));
+	distancePerStep = arcLength / double(steps);
+
+	// finally compute the positive or negative direction path
+	double theta = thetaStart;
+	double thetaDistance;;
+
+	if (thetaStart > thetaStop)
+	{
+		
+	}
+	else
+	{
+		
+	}
+
+	std::cout << "thetaDistance: " << thetaDistance << std::endl;
+
+	if (stop.x > start.x) // positive direction (note that this is confusing because of our coordinate system)
+	{
+		thetaDistance = (2 * M_PI - thetaStart) + thetaStop;
+
+		while (theta <= thetaStart + thetaDistance) 
+		{
+			point.x = radius * cos(theta) + center.x;
+			point.y = radius * sin(theta) + center.y ;
+			path.push_back(point);
+			theta += ( (thetaDistance) / steps );
+		}
+	}
+	else if (stop.x < start.x) // negative direction
+	{
+		thetaDistance = abs(thetaStop - thetaStart);
+		while (theta >= thetaStop)
+		{
+			point.x = radius * cos(theta) + center.x;
+			point.y = radius * sin(theta) + center.y ;
+			path.push_back(point);
+			theta -= ( (thetaDistance) / steps );
+		}
+	}
 	return path;
 }
-*/
+
 
 std::tuple<Vec_double, int> TivaController::findBlockPoint(std::vector<Vec_double> trajectory, double yblock)
 {
@@ -193,9 +264,9 @@ std::tuple<Vec_double, int> TivaController::findBlockPoint(std::vector<Vec_doubl
 | Puck Hitting Methods																    |
 +---------------+-----------------------------------------------------+-----------------+
 | Block         | move the paddle to location of the puck at yhit     | (single motion) |
-| Hit           | block the puck but continue moving past the puck 	  | (single motion) |
+| Hit           | block the puck but continue moving past the puck    | (single motion) |
 | Block and Hit | block the puck then quickly hit puck towards target | (two motions)   |
-| Swing         | swing at the puck hitting it toward a target 	      | (two motions)   |
+| Swing         | swing at the puck hitting it toward a target        | (two motions)   |
 +---------------+-----------------------------------------------------+-----------------+*/
 
 std::vector<Vec_double> TivaController::computeBlockPath(std::vector<Vec_double> trajectory, double sampleTime, double yblock)
@@ -258,11 +329,6 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	blockPath = computeLinearPath(arm2Pos, blockPoint, (stepFactor*steps));	 // compute path to puck
 	hitPath   = computeLinearPath(blockPoint, hitEndPoint, (1.0-stepFactor)*steps); // quickly hit puck towards target
 
-	// pack the two paths into a sigle vector
-	fullPath.reserve( blockPath.size() + hitPath.size() ); // preallocate memory
-	fullPath.insert( fullPath.end(), blockPath.begin(), blockPath.end() );
-	fullPath.insert( fullPath.end(), hitPath.begin(), hitPath.end() );
-
 	// this will catch if any of the composite paths are empty
 	if (blockPath.size() == 0)
 	{
@@ -272,6 +338,11 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	{
 		return hitPath;
 	}
+
+	// pack the two paths into a sigle vector
+	fullPath.reserve( blockPath.size() + hitPath.size() ); // preallocate memory
+	fullPath.insert( fullPath.end(), blockPath.begin(), blockPath.end() );
+	fullPath.insert( fullPath.end(), hitPath.begin(), hitPath.end() );
 
 	return fullPath;
 }
@@ -334,6 +405,16 @@ std::vector<Vec_double> TivaController::computeSwingPath(std::vector<Vec_double>
 	initPath = computeLinearPath(arm2Pos, hitStartPoint, stepFactor*steps);
 	hitPath  = computeLinearPath(hitStartPoint, hitEndPoint, (1.0-stepFactor)*steps);
 
+	// this will catch if any of the composite paths are empty
+	if (initPath.size() == 0)
+	{
+		return initPath;
+	}
+	else if (hitPath.size() == 0) 
+	{
+		return hitPath;
+	}
+
 	// pack the two paths into a sigle vector
 	fullPath.reserve( initPath.size() + hitPath.size() ); // preallocate memory
 	fullPath.insert( fullPath.end(), initPath.begin(), initPath.end() );
@@ -342,10 +423,9 @@ std::vector<Vec_double> TivaController::computeSwingPath(std::vector<Vec_double>
 	return fullPath;
 }
 
-
 //////////////////////////////////////////////////////////
 // this is an example of how to use the class 
-
+/*
 int main() {
 
 	// instaniate Tiva object
@@ -392,8 +472,8 @@ int main() {
 
 	puck.updatePuck(points, 0.07);
 
-	std::cout << "vel cm/frame:  " << puck.getVelocity().x << " " << puck.getVelocity().y<< std::endl;
-	std::cout << "vel cm/second: " << puck.getVelocity().x * puck.getSampleTime() << " " << puck.getVelocity().y * puck.getSampleTime() << std::endl;
+	//std::cout << "vel cm/frame:  " << puck.getVelocity().x << " " << puck.getVelocity().y<< std::endl;
+	//std::cout << "vel cm/second: " << puck.getVelocity().x * puck.getSampleTime() << " " << puck.getVelocity().y * puck.getSampleTime() << std::endl;
 
 	// Now let's hit a puck
 	std::vector<Vec_double> hitPath;
@@ -408,13 +488,22 @@ int main() {
 		//std::cout << point.x << " " << point.y << std::endl;
 	}
 
-	hitPath = Tiva.computeSwingPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.20);
+	//hitPath = Tiva.computeSwingPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.20);
+
+	Vec_double startPoint, stopPoint;
+	startPoint.x = 20;
+	startPoint.y = 5;
+
+	stopPoint.x = 5;
+	stopPoint.y = 20;
+
+	hitPath = Tiva.computeCurvedPath(startPoint, stopPoint, 100, 8.0);
 
 	if (hitPath.size() > 0 )
 	{
 		std::cout << "hit path" << std::endl;
 		for (auto point : hitPath) {
-			//std::cout << point.x << " " << point.y << std::endl;
+			std::cout << point.x << " " << point.y << std::endl;
 		}
 	}
 	else 
@@ -426,5 +515,5 @@ int main() {
 
 	return 0;
 }
-
+*/
 

@@ -39,10 +39,12 @@ class TivaController
 		void moveArm(Vec_double point, bool negative);
 		std::tuple<double,double> computeKinematics(Vec_double point, bool negative);
 
-		// path methods
+		// simple path methods
 		static std::tuple<Vec_double, int> findBlockPoint(std::vector<Vec_double> trajectory, double yblock);
 		std::vector<Vec_double> computeLinearPath(Vec_double start, Vec_double end, int steps);
+		std::vector<Vec_double> computeCurvedPath(Vec_double start, Vec_double stop, int steps, double rFactor);
 		
+		// hitting path paths
 		std::vector<Vec_double> computeBlockPath(std::vector<Vec_double> trajectory, double sampleTime, double yblock);
 		//std::vector<Vec_double> computeHitPath(std::vector<Vec_double> trajectory);
 		std::vector<Vec_double> computeBlockAndHitPath(std::vector<Vec_double> trajectory, Vec_double targetPoint, double sampleTime, double yblock, double stepFactor);
