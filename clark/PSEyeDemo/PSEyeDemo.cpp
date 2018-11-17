@@ -514,22 +514,67 @@ static DWORD WINAPI ArmThread(LPVOID)
 				double yhit 	= 20.0;
 				double xlim 	= 10.0;
 				double ylim 	= 10.0;
-				double minSteps = 200;
 
-				if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
+				// strike puck in the corners 
+				if (abs(puck.getVelocity().x) < 0.25 && abs(puck.getVelocity().y) < 0.25 && sendy < 10 && (sendx < 10 || sendx > 56) )
+				{
+					Vec_double curveStart, curveEnd;
+
+					if (sendx < 10)
+					{
+						curveStart.x = 20;
+						curveStart.y = 5;
+						curveEnd.x = 5;
+						curveEnd.y = 20;
+					}
+					else if (sendx > 56)
+					{
+						curveStart.x = 46;
+						curveStart.y = 5;
+						curveEnd.x = 61;
+						curveEnd.y = 20;
+					}
+
+					initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 250));
+					curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 250, 4.0));
+
+					// pack the two paths into a sigle vector
+					blockPath.reserve( initPath.size() + curvePath.size() ); // preallocate memory
+					blockPath.insert( blockPath.end(), initPath.begin(), initPath.end() );
+					blockPath.insert( blockPath.end(), curvePath.begin(), curvePath.end() );
+				}
+
+				// to hit a low speed puck traveling in our paddle zone
+				else if (abs(puck.getVelocity().x) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
 				{
 					if (sendx > 0 && sendy > 0)
 					{
-						Vec_double puck_point;
-						puck_point.x = sendx;
-						puck_point.y = sendy;
-						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), puck_point, 250);
+						std::vector<Vec_double> trajectory = puck.getTrajectory();
+						int quarterPoint = int(0.25 * trajectory.size()); // 25 % index of the trajectory
+						Vec_double hitPoint = trajectory[quarterPoint];
+
+						// look at the required timing
+						double arrivalTime = quarterPoint * puck.getSampleTime(); // ms
+
+						// curved path to get to the puck
+						std::vector<Vec_double> curvedPath, hitPath;
+						curvedPath = Tiva.computeCurvedPath(Tiva.getArm2Location(), hitPoint, int(arrivalTime/2.0));
+						// Note that curved paths could be dangerous since they may somtimes place the paddle
+						// outside of the rink edges depending on the inputs
+
+						// hitting path through the puck
+						Vec_double endPoint;
+						endPoint.x = curvedPath.back().x;
+						endPoint.y = 40.0;
+						hitPath = Tiva.computeLinearPath(curvedPath.back(), endPoint, 250);
 					}
 				}
+				// go home whenver the puck is traveling away from our paddle zone and is out of our reach
 				else if (puck.getVelocity().y > 0 && sendy > 40)
 				{
 					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
 				}
+				// if the puck is oncoming and headed to our zone compute a trajectory and hit it
 				else
 				{
 					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
@@ -555,6 +600,13 @@ static DWORD WINAPI ArmThread(LPVOID)
 						else
 						{
 							receiver.GetData(&pkin);
+
+							// check if the paddle will collide with the wall
+							if      (point.x >= 61.0) {point.x = 61.0;}
+							else if (point.x <= 5.0)  {point.x = 5.0;}
+							else if (point.y <= 5.0)  {point.y = 5.0;}
+							else if (point.y >= 45.0) {point.y = 45.0;}
+
 							Tiva.moveArm(point, false);
 							pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
 							pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();

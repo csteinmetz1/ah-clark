@@ -115,20 +115,6 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 	{
 		point.x = start.x + i * ( (stop.x - start.x) / steps);
 		point.y = start.y + i * ( (stop.y - start.y) / steps);
-
-		// check if the paddle will collide with the wall
-		if      (point.x >= 61.0)
-		{
-			point.x = 61.0;
-		}
-		else if (point.x <= 5.0) 
-		{	
-			point.x = 5.0;
-		}
-		else if (point.y <= 5.0)
-		{
-			point.y = 5.0;
-		}
 		path.push_back(point);
   	}
 	return path;
@@ -147,7 +133,7 @@ std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_
 	midpoint.x = (start.x + stop.x) / 2.0;
 	midpoint.y = (start.y + stop.y) / 2.0;
 
-	std::cout << "midpoint x: " << midpoint.x << " y:" << midpoint.y << std::endl;
+	//std::cout << "midpoint x: " << midpoint.x << " y:" << midpoint.y << std::endl;
 
 	// compute line between start and stop points
 	double chord_slope = (stop.y - start.y)  / (stop.x - start.x);
@@ -155,7 +141,7 @@ std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_
 	// compute perpendicular bisector slope
 	double bisect_slope = -(1.0 / chord_slope);
 
-	std::cout << "chord slope: " << chord_slope << " bisect slope: " << bisect_slope << std::endl;
+	//std::cout << "chord slope: " << chord_slope << " bisect slope: " << bisect_slope << std::endl;
 
 	// compute center of the fitted circle (this can have two solutions)
 	Vec_double center;
@@ -171,12 +157,12 @@ std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_
 		center.x = midpoint.x + (1.0 * rFactor); 
 	}
 
-	std::cout << "center x: " << center.x << " y: " << center.y << std::endl;
+	//std::cout << "center x: " << center.x << " y: " << center.y << std::endl;
 
 	// find the radius of the circle (distance from center to start point)
 	double radius = sqrt(pow(center.x - start.x, 2) + pow(center.y - start.y, 2));
 
-	std::cout << "radius: " << radius << std::endl;
+	//std::cout << "radius: " << radius << std::endl;
 
 	// find starting and ending angle 
 	double thetaStart = atan2( (start.y - center.y), (start.x - center.x) );
@@ -192,28 +178,21 @@ std::vector<Vec_double> TivaController::computeCurvedPath(Vec_double start, Vec_
 		thetaStop += 2 * M_PI;
 	}
 
-	std::cout << "thetaStart: "<< thetaStart << " thetaStop: " << thetaStop << std::endl;
+	//std::cout << "thetaStart: "<< thetaStart << " thetaStop: " << thetaStop << std::endl;
 
 	// compute the distance per step based on arc length of path
 	arcLength = 2 * M_PI * radius * (abs(thetaStart - thetaStop));
 	distancePerStep = arcLength / double(steps);
 
+	std::cout << "distance per step: " << distancePerStep << std::endl;
+
 	// finally compute the positive or negative direction path
 	double theta = thetaStart;
 	double thetaDistance;;
 
-	if (thetaStart > thetaStop)
-	{
-		
-	}
-	else
-	{
-		
-	}
+	//std::cout << "thetaDistance: " << thetaDistance << std::endl;
 
-	std::cout << "thetaDistance: " << thetaDistance << std::endl;
-
-	if (stop.x > start.x) // positive direction (note that this is confusing because of our coordinate system)
+	if (stop.x > start.x) // positive direction 
 	{
 		thetaDistance = (2 * M_PI - thetaStart) + thetaStop;
 
@@ -425,7 +404,7 @@ std::vector<Vec_double> TivaController::computeSwingPath(std::vector<Vec_double>
 
 //////////////////////////////////////////////////////////
 // this is an example of how to use the class 
-/*
+
 int main() {
 
 	// instaniate Tiva object
@@ -497,7 +476,7 @@ int main() {
 	stopPoint.x = 5;
 	stopPoint.y = 20;
 
-	hitPath = Tiva.computeCurvedPath(startPoint, stopPoint, 100, 8.0);
+	hitPath = Tiva.computeCurvedPath(startPoint, stopPoint, 100, 4.0);
 
 	if (hitPath.size() > 0 )
 	{
@@ -515,5 +494,5 @@ int main() {
 
 	return 0;
 }
-*/
+
 
