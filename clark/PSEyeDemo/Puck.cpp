@@ -1,4 +1,4 @@
-//#include "stdafx.h"
+#include "stdafx.h"
 #include "Puck.h"
 #include <iostream>
 #include <tuple>

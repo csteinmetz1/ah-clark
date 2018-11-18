@@ -1,11 +1,14 @@
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #ifndef TIVA_H
 #define TIVA_H
 
+#include <cmath>
 #include <tuple>
 #include <string>
 #include <iostream> 
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include "Puck.h"
 
 class TivaController 

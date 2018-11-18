@@ -84,12 +84,12 @@ vector<Vec_double> blockPath;
 
 // Puck initialization variables
 double radius = 3.15;		// puck radius in cm
-double widthCm = 66.0;		// rink width in cm
+double widthCm = 64.0;		// rink width in cm
 double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
 
-bool essential_ops = false;
+bool essential_ops = true;
 
 //////////////////////////////////////////////////
 
@@ -357,7 +357,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 				//not essential
 				if (essential_ops)
 				{
-					vector<Vec_double>  trajectory = puck.getTrajectory();
+					vector<Vec_double> trajectory = puck.getTrajectory();
 					vector<Vec_double> path = blockPath;
 					if (trajectory.size() > 0 && 1)
 					{
@@ -371,21 +371,21 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 					if (path.size() > 0 && 1)
 					{
-						for (auto point : path)
+						for (int i=0; i<path.size()-1; i+=50)
 						{
-							point.x = point.x * 3.04762;
-							point.y = point.y * 2.985;
-							circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
+							path[i].x = path[i].x * 3.04762;
+							path[i].y = path[i].y * 2.985;
+							circle(warped_display, Point(path[i].x, path[i].y), 1, Scalar(244, 205, 65), 2, 8, 0);
+							//std::cout << path.size() - 1 << " " << i << endl;
 						}
 					}
 
-
 				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
 
-				//flip(warped_display, flipped_display, 0);
+				flip(warped_display, flipped_display, 0);
 				//flip(flipped_display, warped_display, 1);
 
-				*(Instance->warped_display) = warped_display;
+				*(Instance->warped_display) = flipped_display;
 				*(Instance->binary_display) = final_thresh;
 				}
 				setup = 2; // what does this do?
@@ -504,7 +504,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				std::vector<Vec_double> hitPath;
 
 				// Threshold to recompute path
-				double velocityThreshold = 1.0;
+				double velocityThreshold = 2.0;
 
 				// Define target - the center of the goal
 				Vec_double targetPoint;
@@ -515,8 +515,14 @@ static DWORD WINAPI ArmThread(LPVOID)
 				double xlim 	= 10.0;
 				double ylim 	= 10.0;
 
+				// go home whenver the puck is traveling away from our paddle zone and is out of our reach
+				if (puck.getVelocity().y > 0 && sendy > 45 || puck_found == 0)
+				{
+					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
+					std::cout << "home" << std::endl;
+				}
 				// strike puck in the corners 
-				if (abs(puck.getVelocity().x) < 0.25 && abs(puck.getVelocity().y) < 0.25 && sendy < 10 && (sendx < 10 || sendx > 56) )
+				else if (abs(puck.getVelocity().x) < 0.25 && abs(puck.getVelocity().y) < 0.25 && sendy < 5 && (sendx < 10 || sendx > 56) && 0 )
 				{
 					Vec_double curveStart, curveEnd;
 
@@ -535,49 +541,53 @@ static DWORD WINAPI ArmThread(LPVOID)
 						curveEnd.y = 20;
 					}
 
-					initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 250));
-					curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 250, 4.0));
+					std::vector<Vec_double> initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 250);
+					std::vector<Vec_double> curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 250, 4.0);
 
 					// pack the two paths into a sigle vector
 					blockPath.reserve( initPath.size() + curvePath.size() ); // preallocate memory
 					blockPath.insert( blockPath.end(), initPath.begin(), initPath.end() );
 					blockPath.insert( blockPath.end(), curvePath.begin(), curvePath.end() );
 				}
-
 				// to hit a low speed puck traveling in our paddle zone
-				else if (abs(puck.getVelocity().x) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
+				else if (abs(puck.getVelocity().x) < 2.0 && abs(puck.getVelocity().y) < 2.0 && sendy < 45 && sendy > 10)
 				{
 					if (sendx > 0 && sendy > 0)
 					{
-						std::vector<Vec_double> trajectory = puck.getTrajectory();
-						int quarterPoint = int(0.25 * trajectory.size()); // 25 % index of the trajectory
-						Vec_double hitPoint = trajectory[quarterPoint];
+						//std::vector<Vec_double> trajectory = puck.getTrajectory();
+						//int quarterPoint = int(0.5 * trajectory.size()); // 25 % index of the trajectory
+						//Vec_double hitPoint = trajectory[quarterPoint];
 
 						// look at the required timing
-						double arrivalTime = quarterPoint * puck.getSampleTime(); // ms
+						//double arrivalTime = quarterPoint * puck.getSampleTime(); // ms
 
 						// curved path to get to the puck
-						std::vector<Vec_double> curvedPath, hitPath;
-						curvedPath = Tiva.computeCurvedPath(Tiva.getArm2Location(), hitPoint, int(arrivalTime/2.0));
-						// Note that curved paths could be dangerous since they may somtimes place the paddle
-						// outside of the rink edges depending on the inputs
 
-						// hitting path through the puck
-						Vec_double endPoint;
-						endPoint.x = curvedPath.back().x;
-						endPoint.y = 40.0;
-						hitPath = Tiva.computeLinearPath(curvedPath.back(), endPoint, 250);
+						// Eddie's method
+						Vec_double hitPoint, endPoint;
+						hitPoint.x = sendx;
+						hitPoint.y = sendy - 5.0; // some point 'behind the puck'
+
+						endPoint.x = sendx;
+						endPoint.y = sendy + 5;
+
+						std::vector<Vec_double> initPath, hitPath;
+						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 600);
+						hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 600);
+
+						blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
+						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+						blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
+
+						std::cout << "follow and hit" << std::endl;
 					}
-				}
-				// go home whenver the puck is traveling away from our paddle zone and is out of our reach
-				else if (puck.getVelocity().y > 0 && sendy > 40)
-				{
-					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
 				}
 				// if the puck is oncoming and headed to our zone compute a trajectory and hit it
 				else
 				{
 					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
+
+					std::cout << "block and hit" << std::endl;
 				}
 
 				//christian is a door
@@ -592,7 +602,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					for (auto point : blockPath)
 					{
 						// check if current path is valid for latest velocity
-						if ( abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
+						if ( (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold) || puck_found == 0)
 						{
 							blockPath.clear();
 							break;
