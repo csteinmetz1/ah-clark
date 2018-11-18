@@ -92,15 +92,21 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 {
 	std::vector<Vec_double> path; 		// vector of points on linear path
 	Vec_double point;				    // point struct
-	double distance;		          	// distance of path
+	double distance;		          	// distance of pathc
 	double distancePerStep;				// distance to be travelled during each step
 
 	// compute distance to new point
 	distance = sqrt(pow(stop.x - start.x, 2) + pow(stop.y - start.y, 2));
+
+	if (steps == 0)
+	{
+		steps = int(12.5 * (floor(distance) + 1));
+	}
+
 	distancePerStep = distance / double(steps);
 
 	// NOTE: maxDistancePerStep is a parameter we need to determine by some testing with set PID values
-	double maxDistancePerStep = 0.05;
+	double maxDistancePerStep = 0.15;
 
 	std::cout << "distance per step: " << distancePerStep << std::endl;
 
@@ -404,7 +410,7 @@ std::vector<Vec_double> TivaController::computeSwingPath(std::vector<Vec_double>
 
 //////////////////////////////////////////////////////////
 // this is an example of how to use the class 
-
+/*
 int main() {
 
 	// instaniate Tiva object
@@ -494,5 +500,5 @@ int main() {
 
 	return 0;
 }
-
+*/
 

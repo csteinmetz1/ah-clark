@@ -30,7 +30,7 @@ using namespace cv; // allows ... without using namespace cv::
 
 
 /* used for passing data between main and camera thread */
-typedef struct{
+typedef struct {
 	CLEyeCameraInstance CameraInstance;
 	Mat *Frame;
 	unsigned char *FramePtr;
@@ -46,7 +46,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer); // ah this is how you g
 static DWORD WINAPI ArmThread(LPVOID);
 static DWORD WINAPI TrajectoryThread(LPVOID);
 
-void moveArm(CUDPReceiver *, CUDPSender *, Vec_double , PACKIN , PACKOUT , TivaController *);
+void moveArm(CUDPReceiver *, CUDPSender *, Vec_double, PACKIN, PACKOUT, TivaController *);
 void inst_taskbars(void);
 
 //////////////////////////////////////////////////
@@ -89,14 +89,14 @@ double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
 
-bool essential_ops = false;
+bool essential_ops = true;
 
 //////////////////////////////////////////////////
 
 // main function that ties everything together, threads and camera functionality will be initiated here
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int Width,Height;
+	int Width, Height;
 	int KeyPress;
 	setup = 0;
 	CLEyeCameraInstance EyeCamera = NULL;
@@ -107,7 +107,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	CAMERA_AND_FRAME ThreadPointer;
 	HANDLE _hThread;
-	CLEyeCameraParameter CamCurrentParam=(CLEyeCameraParameter)0;
+	CLEyeCameraParameter CamCurrentParam = (CLEyeCameraParameter)0;
 	bool CamParam = 0;
 
 	Point2fVector points;			//vector that holds the mouse click coordinates from setup image
@@ -116,14 +116,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	//////////////////// EYE CAMERA SETUP///////////////////////////////////
 	// all of this code and more is included in my header file CameraControl.h hence why its commented out
 	// I left it here simply for your reference
-	EyeCamera=StartCam(FRAME_RATE,RESOLUTION);//this does all the commented out code
+	EyeCamera = StartCam(FRAME_RATE, RESOLUTION);//this does all the commented out code
 
 	// Get camera frame dimensions;
 	CLEyeCameraGetFrameDimensions(EyeCamera, Width, Height);
 	// Create a window in which the captured images will be presented
-	namedWindow( "Camera", CV_WINDOW_AUTOSIZE );
+	namedWindow("Camera", CV_WINDOW_AUTOSIZE);
 	//Make a image to hold the frames captured from the camera
-	Frame=Mat(Height,Width,CV_8UC4);//8 bit unsiged 4 channel image for Blue Green Red Alpa (8 bit elements per channel)
+	Frame = Mat(Height, Width, CV_8UC4);//8 bit unsiged 4 channel image for Blue Green Red Alpa (8 bit elements per channel)
 									//Start the eye camera
 	CLEyeCameraStart(EyeCamera);
 
@@ -131,15 +131,15 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// For high frame rate launch a seperate thread
 	//Need to copy vars into one var to launch the second thread
-	ThreadPointer.CameraInstance=EyeCamera;
+	ThreadPointer.CameraInstance = EyeCamera;
 	ThreadPointer.Frame = &Frame;
 	ThreadPointer.warped_display = &warped_display;
 	ThreadPointer.binary_display = &binary_display;
-	ThreadPointer.Threshold=0;
+	ThreadPointer.Threshold = 0;
 
 	// Launch threads and confirm they are running running
 	_hThread = CreateThread(NULL, 0, &CaptureThread, &ThreadPointer, 0, 0);
-	if(_hThread == NULL)
+	if (_hThread == NULL)
 	{
 		printf("Failed to create Vision thread...");
 		getchar();
@@ -170,89 +170,89 @@ int _tmain(int argc, _TCHAR* argv[])
 	points2.push_back(Point2f(0.0, 0.0));
 
 	//main loop that runs during camera feed operation and 
-	while(1) {
+	while (1) {
 		//This will capture keypresses and do whatever you want if you assign the appropriate actions to the right key code
 		KeyPress = waitKey(1);
-		switch (KeyPress){
-			case 27: //escape pressed
-				return 0;
-				break;
-			case 13: //enter key pressed, begin setup.  This can only be done once.  Will maybe look at
-					 //doing this for a different part of the setup phase later.  This will require
-				     //more different conditionals involving the setup variable.
-				setup_img = Frame.clone();
-				 
-				//uncomment to test the coordinates
-				//imshow("initial image", setup_img);
-				//MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
-				//	"Click the left up corner first and clockwise for the rest.",
-				//	"Click", MB_OK);
-				//cvSetMouseCallback("initial image", MousCallback, &points);
+		switch (KeyPress) {
+		case 27: //escape pressed
+			return 0;
+			break;
+		case 13: //enter key pressed, begin setup.  This can only be done once.  Will maybe look at
+				 //doing this for a different part of the setup phase later.  This will require
+				 //more different conditionals involving the setup variable.
+			setup_img = Frame.clone();
 
-				////will wait for 4 mouse clicks before breaking out of loop
-				//while (1)
-				//{
-				//	// wait for mouse clicks
-				//	waitKey(10);
-				//	if (points.size() == 4)
-				//	{
-				//		cout << "4 points gathered" << endl;
-				//		cout << points[0].x << "\t" << points[0].y<<endl;
-				//		cout << points[1].x << "\t" << points[1].y << endl;
-				//		cout << points[2].x << "\t" << points[2].y << endl;
-				//		cout << points[3].x << "\t" << points[3].y << endl;
+			//uncomment to test the coordinates
+			//imshow("initial image", setup_img);
+			//MessageBoxA(NULL, "Please click four corners of the simulated air hockey table.\n"
+			//	"Click the left up corner first and clockwise for the rest.",
+			//	"Click", MB_OK);
+			//cvSetMouseCallback("initial image", MousCallback, &points);
 
-				//		break;
-				//	}
-				//}
-				//getchar();
-				
-				points.push_back(Point2f(159, 342));
-				points.push_back(Point2f(152, 146));
-				points.push_back(Point2f(535, 3));
-				points.push_back(Point2f(554, 475));
+			////will wait for 4 mouse clicks before breaking out of loop
+			//while (1)
+			//{
+			//	// wait for mouse clicks
+			//	waitKey(10);
+			//	if (points.size() == 4)
+			//	{
+			//		cout << "4 points gathered" << endl;
+			//		cout << points[0].x << "\t" << points[0].y<<endl;
+			//		cout << points[1].x << "\t" << points[1].y << endl;
+			//		cout << points[2].x << "\t" << points[2].y << endl;
+			//		cout << points[3].x << "\t" << points[3].y << endl;
 
-				//returns the H matrix
-				Homography = findHomography(Mat(points), Mat(points2));
-				
-				//printing the H matrix, if needed
-				cout << "The transformation Matrix is :" << endl;
-				printMatrix(Homography);
-				cout << endl;
+			//		break;
+			//	}
+			//}
+			//getchar();
 
-				//slider bars for adjusting the hue, saturation, and value settings
-				//control will be the name of the window
-				inst_taskbars();
+			points.push_back(Point2f(159, 342));
+			points.push_back(Point2f(152, 146));
+			points.push_back(Point2f(535, 3));
+			points.push_back(Point2f(554, 475));
 
-				setup = 1;
-				KeyPress = 0;
-				break;
+			//returns the H matrix
+			Homography = findHomography(Mat(points), Mat(points2));
 
-			default: //do nothing
-				break;
+			//printing the H matrix, if needed
+			cout << "The transformation Matrix is :" << endl;
+			printMatrix(Homography);
+			cout << endl;
+
+			//slider bars for adjusting the hue, saturation, and value settings
+			//control will be the name of the window
+			inst_taskbars();
+
+			setup = 1;
+			KeyPress = 0;
+			break;
+
+		default: //do nothing
+			break;
 		}
-		
+
 
 		//Display the captured frame
-		try{
+		try {
 			if (setup == 0)
-			imshow("Camera", Frame);
+				imshow("Camera", Frame);
 		}
-		catch(exception&)
+		catch (exception&)
 		{
 			cout << "camera exception" << endl;
 		}
 		//Dispay warped and 
 		if (setup == 2 && essential_ops)
 		{
-			try{
+			try {
 				imshow("Warped", warped_display);
 			}
 			catch (exception&)
 			{
 				cout << "warped exception" << endl;
 			}
-			try{
+			try {
 				imshow("Binary Image", binary_display);
 			}
 			catch (exception&)
@@ -263,11 +263,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		CLEyeSetCameraParameter(EyeCamera, CLEYE_GAIN, gain);
 		CLEyeSetCameraParameter(EyeCamera, CLEYE_EXPOSURE, exposure);
 	}
-	
+
 	CLEyeCameraStop(EyeCamera);
 	CLEyeDestroyCamera(EyeCamera);
 	EyeCamera = NULL;
-	
+
 	cvSetMouseCallback("Camera Input", NULL, NULL);
 	while (1)
 	{
@@ -279,11 +279,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
 ///////////////////////SUB THREAD///////////////////////////
 //for high frame rates you will process images here the main function will allow interactions and display only
-static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
-	CAMERA_AND_FRAME *Instance=(CAMERA_AND_FRAME*)ThreadPointer; //type cast the void pointer back to the proper type so we can access its elements
+static DWORD WINAPI CaptureThread(LPVOID ThreadPointer) {
+	CAMERA_AND_FRAME *Instance = (CAMERA_AND_FRAME*)ThreadPointer; //type cast the void pointer back to the proper type so we can access its elements
 
-	int FramerCounter=0;
-	Mat CamImg=Mat(*(Instance->Frame)).clone();
+	int FramerCounter = 0;
+	Mat CamImg = Mat(*(Instance->Frame)).clone();
 	Mat warped_display;
 	Mat binary_display;
 	Mat flipped_display;
@@ -298,86 +298,86 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 	double dM10;
 	double dArea;
 	double lastArea = 0.0;
-	
+
 	double posX, posY;
 	Moments oMoments;
 
 	Point points;
 	points.x = 0;
 	points.y = 0;
-	clock_t StartTime,EndTime;
+	clock_t StartTime, EndTime;
 
-		while (1) {
-			//Get Frame From Camera
-			CLEyeCameraGetFrame(Instance->CameraInstance, CamImg.data);
+	while (1) {
+		//Get Frame From Camera
+		CLEyeCameraGetFrame(Instance->CameraInstance, CamImg.data);
 
-			// DO YOUR IMAGE PROCESSING HERE
-			// after we have the homography; setup==0
-			if (setup >= 1)
+		// DO YOUR IMAGE PROCESSING HERE
+		// after we have the homography; setup==0
+		if (setup >= 1)
+		{
+			// performs the homography, and warps image to our rectangular "rink"
+			setup = 1;
+			warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
+			// flip image around the y axis
+			//flip(warped_display, flipped_display, 1);
+			//warped_display = flipped_display.clone();
+
+			// this could possible be removed without error in functionality
+			imgHSV = warped_display.clone();
+
+			// apply the HSV to the
+			cvtColor(warped_display, imgHSV, COLOR_BGR2HSV);
+
+			// take a threshold of the image based off of the HSV values
+			inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), thresholded);
+
+			// this line sets up final_thresh's width and height params to that of thresholded
+			final_thresh = thresholded.clone();
+			noise_reduction(final_thresh, thresholded);
+
+			//gather the area and XY center of the centroid/contour
+			oMoments = moments(final_thresh, true);
+			puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found);
+
+			//display the XY coordinates of the puck in real time (according to the warped image)
+			//cout << posX << "\t" << posY << endl;
+
+			setup = 1; // why is this getting set to 1 again?
+			if (posX == -1.0 || posY == -1.0)
+				puck_found = 0;
+
+			// this is our tuning of the vision coordinates
+			sendx = (posX) / 3.04762;
+			sendy = (posY) / 2.985;
+			//cout << sendx << "\t" << sendy << endl;
+			// tell the arm we are ready
+			if (arm_comm == 0)
+				arm_comm = 1;
+
+			//not essential
+			if (essential_ops)
 			{
-				// performs the homography, and warps image to our rectangular "rink"
-				setup = 1;
-				warpPerspective(CamImg, warped_display, Homography, Size(1000.0 / scale, 2000.0 / scale));
-				// flip image around the y axis
-				//flip(warped_display, flipped_display, 1);
-				//warped_display = flipped_display.clone();
-
-				// this could possible be removed without error in functionality
-				imgHSV = warped_display.clone();
-
-				// apply the HSV to the
-				cvtColor(warped_display, imgHSV, COLOR_BGR2HSV);
-
-				// take a threshold of the image based off of the HSV values
-				inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), thresholded);
-
-				// this line sets up final_thresh's width and height params to that of thresholded
-				final_thresh = thresholded.clone();
-				noise_reduction(final_thresh, thresholded);
-
-				//gather the area and XY center of the centroid/contour
-				oMoments = moments(final_thresh, true);
-				puck_location(warped_display, oMoments, &lastx, &lasty, &lastArea, &posX, &posY, &puck_found);
-
-				//display the XY coordinates of the puck in real time (according to the warped image)
-				//cout << posX << "\t" << posY << endl;
-
-				setup = 1; // why is this getting set to 1 again?
-				if (posX == -1.0 || posY == -1.0)
-					puck_found = 0;
-
-				// this is our tuning of the vision coordinates
-				sendx = (posX) / 3.04762;
-				sendy = (posY) / 2.985;
-				//cout << sendx << "\t" << sendy << endl;
-				// tell the arm we are ready
-				if (arm_comm == 0)
-					arm_comm = 1;
-
-				//not essential
-				if (essential_ops)
+				vector<Vec_double>  trajectory = puck.getTrajectory();
+				vector<Vec_double> path = blockPath;
+				if (trajectory.size() > 0 && 1)
 				{
-					vector<Vec_double>  trajectory = puck.getTrajectory();
-					vector<Vec_double> path = blockPath;
-					if (trajectory.size() > 0 && 1)
+					for (auto point : trajectory)
 					{
-						for (auto point : trajectory)
-						{
-							point.x = point.x * 3.04762;
-							point.y = point.y * 2.985;
-							circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
-						}
+						point.x = point.x * 3.04762;
+						point.y = point.y * 2.985;
+						circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
 					}
+				}
 
-					if (path.size() > 0 && 1)
+				if (path.size() > 0 && 1)
+				{
+					for (int i = 0; i < path.size() - 1; i += 50)
 					{
-						for (auto point : path)
-						{
-							point.x = point.x * 3.04762;
-							point.y = point.y * 2.985;
-							circle(warped_display, Point(point.x, point.y), 1, Scalar(255, 0, 0), 2, 8, 0);
-						}
+						path[i].x = path[i].x * 3.04762;
+						path[i].y = path[i].y * 2.985;
+						circle(warped_display, Point(path[i].x, path[i].y), 1, Scalar(244, 205, 65), 2, 8, 0);
 					}
+				}
 
 
 				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
@@ -387,33 +387,33 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer){
 
 				*(Instance->warped_display) = warped_display;
 				*(Instance->binary_display) = final_thresh;
-				}
-				setup = 2; // what does this do?
 			}
-
-			//copy it to main thread image.
-			if (setup == 0)
-			{
-				//this can change later
-				circle(CamImg, Point(419, 364), 2, Scalar(255, 0, 255), 2, 8, 0);
-				circle(CamImg, Point(273, 243), 2, Scalar(255, 0, 255), 2, 8, 0);
-				circle(CamImg, Point(412, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
-				//circle(CamImg, Point(463, 385), 2, Scalar(255, 0, 255), 2, 8, 0);
-			}
-			*(Instance->Frame) = CamImg;
-			//imshow("Camera Feed",CamImg);
-
-			// Track FPS
-			++frame_number; // difference between frame_number and FrameCounter?
-			if (FramerCounter == 0) StartTime = clock();
-			FramerCounter++;
-			EndTime = clock();
-			if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
-				//cout << "FPS:" << FramerCounter << endl;
-				FPS = FramerCounter;
-				FramerCounter = 0;
-			}
+			setup = 2; // what does this do?
 		}
+
+		//copy it to main thread image.
+		if (setup == 0)
+		{
+			//this can change later
+			circle(CamImg, Point(419, 364), 2, Scalar(255, 0, 255), 2, 8, 0);
+			circle(CamImg, Point(273, 243), 2, Scalar(255, 0, 255), 2, 8, 0);
+			circle(CamImg, Point(412, 121), 2, Scalar(255, 0, 255), 2, 8, 0);
+			//circle(CamImg, Point(463, 385), 2, Scalar(255, 0, 255), 2, 8, 0);
+		}
+		*(Instance->Frame) = CamImg;
+		//imshow("Camera Feed",CamImg);
+
+		// Track FPS
+		++frame_number; // difference between frame_number and FrameCounter?
+		if (FramerCounter == 0) StartTime = clock();
+		FramerCounter++;
+		EndTime = clock();
+		if ((EndTime - StartTime) / CLOCKS_PER_SEC >= 1) {
+			//cout << "FPS:" << FramerCounter << endl;
+			FPS = FramerCounter;
+			FramerCounter = 0;
+		}
+	}
 	return 0;
 }
 
@@ -437,7 +437,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		vector<Vec_double> right_corner;
 		//timing variables
 		clock_t start, end;
-		
+
 		///// Don't worry I am going to write a method that lets us trace out paths like this
 
 		//right corner case
@@ -471,7 +471,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		home.x = 33;
 		home.y = 20;
 		int home_status = 0;				//0 = not at home
-		
+
 		//puck disappears variable.  If the puck disappears at any point during frame sampling set disappear to 1
 		int disappear = 0;
 		// set arm to home - make sure to manually move the arm home before starting the program!
@@ -486,7 +486,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				{
 					std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 250);
 
-					for (auto point : arm_path) 
+					for (auto point : arm_path)
 					{
 						receiver.GetData(&pkin);
 						Tiva.moveArm(point, false);
@@ -511,12 +511,12 @@ static DWORD WINAPI ArmThread(LPVOID)
 				targetPoint.x = 33.0;
 				targetPoint.y = 136.0;
 
-				double yhit 	= 20.0;
-				double xlim 	= 10.0;
-				double ylim 	= 10.0;
+				double yhit = 20.0;
+				double xlim = 10.0;
+				double ylim = 10.0;
+				double minSteps = 200;
 
-				// strike puck in the corners 
-				if (abs(puck.getVelocity().x) < 0.25 && abs(puck.getVelocity().y) < 0.25 && sendy < 10 && (sendx < 10 || sendx > 56) )
+				if ( abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().y) < 0.25 && ( ( sendy < 10 && sendx < 10 ) || ( sendy < 10 && sendx > 56) ) )
 				{
 					Vec_double curveStart, curveEnd;
 
@@ -535,49 +535,48 @@ static DWORD WINAPI ArmThread(LPVOID)
 						curveEnd.y = 20;
 					}
 
-					initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 250));
-					curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 250, 4.0));
+					vector<Vec_double> initPath, curvePath;
+
+					initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 400);
+					curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 400, 4.0);
+
+					std::cout << "corner" << std::endl;
 
 					// pack the two paths into a sigle vector
-					blockPath.reserve( initPath.size() + curvePath.size() ); // preallocate memory
-					blockPath.insert( blockPath.end(), initPath.begin(), initPath.end() );
-					blockPath.insert( blockPath.end(), curvePath.begin(), curvePath.end() );
+					blockPath.reserve(initPath.size() + curvePath.size()); // preallocate memory
+					blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+					blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
 				}
-
-				// to hit a low speed puck traveling in our paddle zone
-				else if (abs(puck.getVelocity().x) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
+				else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
 				{
 					if (sendx > 0 && sendy > 0)
 					{
-						std::vector<Vec_double> trajectory = puck.getTrajectory();
-						int quarterPoint = int(0.25 * trajectory.size()); // 25 % index of the trajectory
-						Vec_double hitPoint = trajectory[quarterPoint];
+						// Eddie's method
+						Vec_double hitPoint, endPoint;
+						hitPoint.x = sendx;
+						hitPoint.y = sendy - 10.0; // some point 'behind the puck'
 
-						// look at the required timing
-						double arrivalTime = quarterPoint * puck.getSampleTime(); // ms
+						endPoint.x = sendx;
+						endPoint.y = sendy + 5;
 
-						// curved path to get to the puck
-						std::vector<Vec_double> curvedPath, hitPath;
-						curvedPath = Tiva.computeCurvedPath(Tiva.getArm2Location(), hitPoint, int(arrivalTime/2.0));
-						// Note that curved paths could be dangerous since they may somtimes place the paddle
-						// outside of the rink edges depending on the inputs
+						std::vector<Vec_double> initPath, hitPath;
+						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0);
+						hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200);
 
-						// hitting path through the puck
-						Vec_double endPoint;
-						endPoint.x = curvedPath.back().x;
-						endPoint.y = 40.0;
-						hitPath = Tiva.computeLinearPath(curvedPath.back(), endPoint, 250);
+						blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
+						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+						blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
+
+						std::cout << "follow and hit" << std::endl;
 					}
 				}
-				// go home whenver the puck is traveling away from our paddle zone and is out of our reach
 				else if (puck.getVelocity().y > 0 && sendy > 40)
 				{
 					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
 				}
-				// if the puck is oncoming and headed to our zone compute a trajectory and hit it
 				else
 				{
-					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
+					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
 				}
 
 				//christian is a door
@@ -587,14 +586,15 @@ static DWORD WINAPI ArmThread(LPVOID)
 					Vec_double start_vel = puck.getVelocity();
 
 					// send hit location to be printed on the screen as green dot
-					hit_location = blockPath.back(); 
+					hit_location = blockPath.back();
 
 					for (auto point : blockPath)
 					{
 						// check if current path is valid for latest velocity
-						if ( abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
+						if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
 						{
 							blockPath.clear();
+							cout << " clear path " << endl;
 							break;
 						}
 						else
@@ -602,10 +602,10 @@ static DWORD WINAPI ArmThread(LPVOID)
 							receiver.GetData(&pkin);
 
 							// check if the paddle will collide with the wall
-							if      (point.x >= 61.0) {point.x = 61.0;}
-							else if (point.x <= 5.0)  {point.x = 5.0;}
-							else if (point.y <= 5.0)  {point.y = 5.0;}
-							else if (point.y >= 45.0) {point.y = 45.0;}
+							if     (point.x >= 61.0) { point.x = 61.0; }
+							else if (point.x <= 5.0) { point.x = 5.0; }
+							else if (point.y <= 5.0) { point.y = 5.0; }
+							else if (point.y >= 45.0) { point.y = 45.0; }
 
 							Tiva.moveArm(point, false);
 							pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
@@ -629,7 +629,7 @@ static DWORD WINAPI TrajectoryThread(LPVOID)
 	vector<Vec_double> puck_points; // vector of sampled puck locations
 
 	while (1)
-	{	
+	{
 		// start the clock
 		clock_t begin = clock();
 
@@ -639,13 +639,13 @@ static DWORD WINAPI TrajectoryThread(LPVOID)
 			frame_number = 1;
 
 			// the puck is gone
-			if (sendx < 0 || sendy < 0) 
+			if (sendx < 0 || sendy < 0)
 			{
 				puck_points.clear();	 // clear sampled points
 				clock_t begin = clock(); // restart the clock
 			}
 			// sample a frame
-			else 
+			else
 			{
 				point.x = sendx;
 				point.y = sendy;
@@ -677,7 +677,7 @@ void inst_taskbars(void)
 
 	cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
 	cvCreateTrackbar("HighV", "Control", &iHighV, 255);
-	
+
 	cvCreateTrackbar("Gain", "Cam Control", &gain, 255);
 	cvCreateTrackbar("Exposure", "Cam Control", &exposure, 255);
 }
