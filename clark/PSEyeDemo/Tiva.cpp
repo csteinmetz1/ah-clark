@@ -100,13 +100,13 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 
 	if (steps == 0)
 	{
-		steps = int(24.0 * (floor(distance) + 1));
+		steps = int(15.0 * (floor(distance) + 1));
 	}
 
 	distancePerStep = distance / double(steps);
 
 	// NOTE: maxDistancePerStep is a parameter we need to determine by some testing with set PID values
-	double maxDistancePerStep = 0.15;
+	double maxDistancePerStep = 0.20;
 
 	std::cout << "distance per step: " << distancePerStep << std::endl;
 	//std::cout << "steps: " << steps << std::endl;
@@ -235,17 +235,44 @@ std::tuple<Vec_double, int> TivaController::findBlockPoint(std::vector<Vec_doubl
 	blockPoint.x = -1;
 	blockPoint.y = -1;
 
-	for (int index = 0; index < trajectory.size(); ++index)
+	std::string blockType = "line";
+
+	if (blockType == "triangle")
 	{
-		if (trajectory[index].y < yblock) 
+		double leftLineSlope = (10.0 - 3.5) / (33.0 - 15.0);
+		double rightLineSlope = (10.0 - 3.5) / (33.0 - 48.0);
+
+		for (int index = 0; index < trajectory.size(); ++index)
 		{
-			blockPoint.x = trajectory[index].x;
-			blockPoint.y = trajectory[index].y;
-			blockFrame = index + 1; 	// find frame at which to hit the puck
-			break;
+			if (trajectory[index].y < (leftLineSlope * (trajectory[index].x - 33.0) + 10.0) && (trajectory[index].x < 33.0))
+			{
+				blockPoint.x = trajectory[index].x;
+				blockPoint.y = trajectory[index].y;
+				blockFrame = index + 1; 	// find frame at which to hit the puck
+				break;
+			}
+			if (trajectory[index].y < (rightLineSlope * (trajectory[index].x - 33.0) + 10.0) && (trajectory[index].x > 33.0))
+			{
+				blockPoint.x = trajectory[index].x;
+				blockPoint.y = trajectory[index].y;
+				blockFrame = index + 1; 	// find frame at which to hit the puck
+				break;
+			}
 		}
 	}
-
+	else if (blockType == "line")
+	{
+		for (int index = 0; index < trajectory.size(); ++index)
+		{
+			if (trajectory[index].y < yblock)
+			{
+				blockPoint.x = trajectory[index].x;
+				blockPoint.y = trajectory[index].y;
+				blockFrame = index + 1; 	// find frame at which to hit the puck
+				break;
+			}
+		}
+	}
 	return std::make_tuple(blockPoint, blockFrame);
 }
 
@@ -310,7 +337,7 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 
 	slope = (targetPoint.y - blockPoint.y)  / (targetPoint.x - blockPoint.x);
 
-	hitEndPoint.y = 35.0;
+	hitEndPoint.y = yblock;
 	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / slope ) + blockPoint.x;
 
 	// calculate number of steps
