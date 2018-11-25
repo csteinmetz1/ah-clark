@@ -80,6 +80,8 @@ int frame_number;
 int FPS;
 Vec_double hit_location;
 
+string game_mode = "normal";    //the three possible modes are normal, penalty defense, penalty offense
+
 vector<Vec_double> blockPath;
 
 // Puck initialization variables
@@ -174,6 +176,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		//This will capture keypresses and do whatever you want if you assign the appropriate actions to the right key code
 		KeyPress = waitKey(1);
 		switch (KeyPress) {
+		case 113:
+			game_mode = "normal";
+			cout << "game mode is normal"<<endl;
+			break;
+		case 119:
+			game_mode = "penalty defense";
+			cout << "game mode is penalty defense" << endl;
+			break;
+		case 101:
+			game_mode = "penalty offense";
+			cout << "game mode is penalty offense" << endl;
+			break;
 		case 27: //escape pressed
 			return 0;
 			break;
@@ -480,143 +494,154 @@ static DWORD WINAPI ArmThread(LPVOID)
 		//endless loop that will run until program quits
 		while (1)
 		{
-			if (puck_found == 0) // go home
+			if (game_mode == "normal")
 			{
-				if (home_status == 0)
+				if (puck_found == 0) // go home
 				{
-					std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 250);
-
-					for (auto point : arm_path)
+					if (home_status == 0)
 					{
-						receiver.GetData(&pkin);
-						Tiva.moveArm(point, false);
-						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
-						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
-						sender.SendData(&pkout);
-						Sleep(1);
-					}
-					home_status = 1;
-				}
-			}
-			else if (arm_comm == 1)
-			{
-				// Now let's hit a puck
-				std::vector<Vec_double> hitPath;
+						std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 250);
 
-				// Threshold to recompute path
-				double velocityThreshold = 1.0;
-
-				// Define target - the center of the goal
-				Vec_double targetPoint;
-				targetPoint.x = 33.0;
-				targetPoint.y = 136.0;
-
-				double yhit = 20.0;
-				double xlim = 10.0;
-				double ylim = 10.0;
-				double minSteps = 200;
-
-				if ( abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().y) < 0.25 && ( ( sendy < 10 && sendx < 10 ) || ( sendy < 10 && sendx > 56) ) )
-				{
-					Vec_double curveStart, curveEnd;
-
-					if (sendx < 10)
-					{
-						curveStart.x = 20;
-						curveStart.y = 5;
-						curveEnd.x = 5;
-						curveEnd.y = 20;
-					}
-					else if (sendx > 56)
-					{
-						curveStart.x = 46;
-						curveStart.y = 5;
-						curveEnd.x = 61;
-						curveEnd.y = 20;
-					}
-
-					vector<Vec_double> initPath, curvePath;
-
-					initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 400);
-					curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 400, 4.0);
-
-					std::cout << "corner" << std::endl;
-
-					// pack the two paths into a sigle vector
-					blockPath.reserve(initPath.size() + curvePath.size()); // preallocate memory
-					blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
-					blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
-				}
-				else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
-				{
-					if (sendx > 0 && sendy > 0)
-					{
-						// Eddie's method
-						Vec_double hitPoint, endPoint;
-						hitPoint.x = sendx;
-						hitPoint.y = sendy - 10.0; // some point 'behind the puck'
-
-						endPoint.x = sendx;
-						endPoint.y = sendy + 5;
-
-						std::vector<Vec_double> initPath, hitPath;
-						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0);
-						hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200);
-
-						blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
-						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
-						blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
-
-						std::cout << "follow and hit" << std::endl;
-					}
-				}
-				else if (puck.getVelocity().y > 0 && sendy > 40)
-				{
-					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
-				}
-				else
-				{
-					blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
-				}
-
-				//christian is a door
-				if (blockPath.size() > 0 && 1) // check if the path contains points
-				{
-					// store starting velcoity to check against updated value
-					Vec_double start_vel = puck.getVelocity();
-
-					// send hit location to be printed on the screen as green dot
-					hit_location = blockPath.back();
-
-					for (auto point : blockPath)
-					{
-						// check if current path is valid for latest velocity
-						if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
-						{
-							blockPath.clear();
-							cout << " clear path " << endl;
-							break;
-						}
-						else
+						for (auto point : arm_path)
 						{
 							receiver.GetData(&pkin);
-
-							// check if the paddle will collide with the wall
-							if     (point.x >= 61.0) { point.x = 61.0; }
-							else if (point.x <= 5.0) { point.x = 5.0; }
-							else if (point.y <= 5.0) { point.y = 5.0; }
-							else if (point.y >= 45.0) { point.y = 45.0; }
-
 							Tiva.moveArm(point, false);
 							pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
 							pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
 							sender.SendData(&pkout);
 							Sleep(1);
 						}
+						home_status = 1;
 					}
-					home_status = 0;
-					arm_comm = 0;
 				}
+				else if (arm_comm == 1)
+				{
+					// Now let's hit a puck
+					std::vector<Vec_double> hitPath;
+
+					// Threshold to recompute path
+					double velocityThreshold = 1.0;
+
+					// Define target - the center of the goal
+					Vec_double targetPoint;
+					targetPoint.x = 33.0;
+					targetPoint.y = 136.0;
+
+					double yhit = 20.0;
+					double xlim = 10.0;
+					double ylim = 10.0;
+					double minSteps = 200;
+
+					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().y) < 0.25 && ((sendy < 10 && sendx < 10) || (sendy < 10 && sendx > 56)))
+					{
+						Vec_double curveStart, curveEnd;
+
+						if (sendx < 10)
+						{
+							curveStart.x = 20;
+							curveStart.y = 5;
+							curveEnd.x = 5;
+							curveEnd.y = 20;
+						}
+						else if (sendx > 56)
+						{
+							curveStart.x = 46;
+							curveStart.y = 5;
+							curveEnd.x = 61;
+							curveEnd.y = 20;
+						}
+
+						vector<Vec_double> initPath, curvePath;
+
+						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 400);
+						curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 400, 4.0);
+
+						std::cout << "corner" << std::endl;
+
+						// pack the two paths into a sigle vector
+						blockPath.reserve(initPath.size() + curvePath.size()); // preallocate memory
+						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+						blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
+					}
+					else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
+					{
+						if (sendx > 0 && sendy > 0)
+						{
+							// Eddie's method
+							Vec_double hitPoint, endPoint;
+							hitPoint.x = sendx;
+							hitPoint.y = sendy - 10.0; // some point 'behind the puck'
+
+							endPoint.x = sendx;
+							endPoint.y = sendy + 5;
+
+							std::vector<Vec_double> initPath, hitPath;
+							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0);
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200);
+
+							blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
+							blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+							blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
+
+							std::cout << "follow and hit" << std::endl;
+						}
+					}
+					else if (puck.getVelocity().y > 0 && sendy > 40)
+					{
+						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
+					}
+					else
+					{
+						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
+					}
+
+					//christian is a door
+					if (blockPath.size() > 0 && 1) // check if the path contains points
+					{
+						// store starting velcoity to check against updated value
+						Vec_double start_vel = puck.getVelocity();
+
+						// send hit location to be printed on the screen as green dot
+						hit_location = blockPath.back();
+
+						for (auto point : blockPath)
+						{
+							// check if current path is valid for latest velocity
+							if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold)
+							{
+								blockPath.clear();
+								cout << " clear path " << endl;
+								break;
+							}
+							else
+							{
+								receiver.GetData(&pkin);
+
+								// check if the paddle will collide with the wall
+								if (point.x >= 61.0) { point.x = 61.0; }
+								else if (point.x <= 5.0) { point.x = 5.0; }
+								else if (point.y <= 5.0) { point.y = 5.0; }
+								else if (point.y >= 45.0) { point.y = 45.0; }
+
+								Tiva.moveArm(point, false);
+								pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+								pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+								sender.SendData(&pkout);
+								Sleep(1);
+							}
+						}
+						home_status = 0;
+						arm_comm = 0;
+					}
+				}
+			}
+			else if (game_mode == "penalty defense")
+			{
+			cout << "hello from penalty defense" << endl;
+			}
+			else if (game_mode == "penalty offense")
+			{
+			cout << "hello from penalty offense" << endl;
 			}
 		}
 	}
