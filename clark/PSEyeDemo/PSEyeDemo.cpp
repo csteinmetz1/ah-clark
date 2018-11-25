@@ -444,7 +444,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 36, -22.6);   //modified 11/16/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 34.5, -22.6);   //modified 11/25/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -487,7 +487,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		int home_status = 0;				//0 = not at home
 
 		// gameplay constants 
-		double velocityThreshold = 2.0;
+		double velocityThreshold = 1.0;
 
 		// set arm to home - make sure to manually move the arm home before starting the program!
 		Tiva.moveArm(home, false);
@@ -501,7 +501,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 				{
 					if (home_status == 0)
 					{
-						std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 250);
+						std::vector<Vec_double> arm_path = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300, true);
 
 						for (auto point : arm_path)
 						{
@@ -515,7 +515,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						home_status = 1;
 					}
 				}
-				else if (arm_comm == 1)
+				else
 				{
 					// Now let's hit a puck
 					std::vector<Vec_double> hitPath;
@@ -530,30 +530,33 @@ static DWORD WINAPI ArmThread(LPVOID)
 					double ylim = 10.0;
 					double minSteps = 200;
 
+					double current_x = sendx;
+					double current_y = sendy;
+
 					// corner cases
-					if (abs(puck.getVelocity().y) < 0.1 && abs(puck.getVelocity().x) < 0.1 && ((sendy < 10 && sendx < 18) || (sendy < 10 && sendx > 44)))
+					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && ((current_y < 15 && current_x < 18) || (current_y < 15 && current_x > 44)))
 					{
 						Vec_double curveStart, curveEnd;
 
-						if (sendx < 10)
+						if (current_x < 18)
 						{
 							curveStart.x = 20;
-							curveStart.y = 5;
+							curveStart.y = 3.5;
 							curveEnd.x = 5;
 							curveEnd.y = 20;
 						}
-						else if (sendx > 56)
+						else if (current_x > 44)
 						{
 							curveStart.x = 46;
-							curveStart.y = 5;
+							curveStart.y =3.5;
 							curveEnd.x = 61;
 							curveEnd.y = 20;
 						}
 
 						vector<Vec_double> initPath, curvePath;
 
-						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 400);
-						curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 400, 4.0);
+						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 600, true);
+						curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 600, 4.0);
 
 						std::cout << "corner" << std::endl;
 
@@ -563,7 +566,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
 					}
 					// follow and hit 
-					else if (abs(puck.getVelocity().y) < 2.0 && abs(puck.getVelocity().x) < 2.0 && sendy < 40)
+					else if (abs(puck.getVelocity().y) < 2.0 && abs(puck.getVelocity().x) < 2.0 && sendy < 45 && 0)
 					{
 						if (sendx > 0 && sendy > 0 && sendy > Tiva.getArm2Location().y)
 						{
@@ -576,8 +579,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 							endPoint.y = sendy + 5;
 
 							std::vector<Vec_double> initPath, hitPath;
-							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0);
-							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200);
+							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200, true);
 
 							blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
 							blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
@@ -588,12 +591,12 @@ static DWORD WINAPI ArmThread(LPVOID)
 					}
 					else if (puck.getVelocity().y > 0 && sendy > 40)
 					{
-						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
+						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300, true);
 						std::cout << "go home" << std::endl;
 					}
-					else
+					else if (puck.getVelocity().y < 0)
 					{
-						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
+						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
 						std::cout << "block and hit" << std::endl;
 					}
 
@@ -621,7 +624,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 								// check if the paddle will collide with the wall
 								if (point.x >= 61.0) { point.x = 61.0; }
 								else if (point.x <= 5.0) { point.x = 5.0; }
-								else if (point.y <= 5.0) { point.y = 5.0; }
+								else if (point.y <= 3.5) { point.y = 3.5; }
 								else if (point.y >= 45.0) { point.y = 45.0; }
 
 								Tiva.moveArm(point, false);

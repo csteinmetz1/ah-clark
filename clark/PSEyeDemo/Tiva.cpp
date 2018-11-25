@@ -88,7 +88,7 @@ void TivaController::updateArmLocation()
 	arm2Pos.y = arm1Pos.y + (a2 * sin(q1+q2));
 }
 
-std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_double stop, int steps)
+std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_double stop, int steps, bool safety=true)
 {
 	std::vector<Vec_double> path; 		// vector of points on linear path
 	Vec_double point;				    // point struct
@@ -100,7 +100,7 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 
 	if (steps == 0)
 	{
-		steps = int(12.5 * (floor(distance) + 1));
+		steps = int(24.0 * (floor(distance) + 1));
 	}
 
 	distancePerStep = distance / double(steps);
@@ -109,8 +109,10 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 	double maxDistancePerStep = 0.15;
 
 	std::cout << "distance per step: " << distancePerStep << std::endl;
+	//std::cout << "steps: " << steps << std::endl;
+	//std::cout << "distance: " << distance << std::endl;
 
-	if (distancePerStep > maxDistancePerStep) 
+	if (distancePerStep > maxDistancePerStep && safety) 
 	{ 
 		// return empty path if the distance per step is too large
 		// this helps to tame erratic behaviour
@@ -230,6 +232,9 @@ std::tuple<Vec_double, int> TivaController::findBlockPoint(std::vector<Vec_doubl
 	Vec_double blockPoint;
 	int blockFrame = 0;
 
+	blockPoint.x = -1;
+	blockPoint.y = -1;
+
 	for (int index = 0; index < trajectory.size(); ++index)
 	{
 		if (trajectory[index].y < yblock) 
@@ -283,9 +288,21 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	Vec_double blockPoint;	  // point to intercept the puck and block it
 	int blockFrame;			  // frame in the future at which the puck is to be intercepted
 
+	// generate paths
+	std::vector<Vec_double> blockPath; // path from the current arm position to the puck intercept
+	std::vector<Vec_double> hitPath;   // path from the block to point past the puck towards target
+	std::vector<Vec_double> fullPath;  // concatenation of the above two paths 
+
 	block = findBlockPoint(trajectory, yblock);
+
 	blockPoint = std::get<0>(block);
 	blockFrame = std::get<1>(block);
+
+	// return empty path if no intersection point is found
+	if (blockPoint.x == -1 || blockPoint.y == -1)
+	{
+		return fullPath;
+	}
 
 	// compute hitting details
 	double slope; 			  // slope of the line connecting puck hit point and puck target point
@@ -300,11 +317,6 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	double arrivalTime = blockFrame * sampleTime * 1000.0; 	// est. time in milliseconds
 	int steps = int(arrivalTime / 2.0);						// est. number of steps (we assume each step takes ~2ms)
 
-	// generate paths
-	std::vector<Vec_double> blockPath; // path from the current arm position to the puck intercept
-	std::vector<Vec_double> hitPath;   // path from the block to point past the puck towards target
-	std::vector<Vec_double> fullPath;  // concatenation of the above two paths 
-
 	// check stepFactor if in valid range
 	if (stepFactor <= 0 || stepFactor >= 1.0)
 	{
@@ -312,7 +324,7 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	}
 
 	blockPath = computeLinearPath(arm2Pos, blockPoint, (stepFactor*steps));	 // compute path to puck
-	hitPath   = computeLinearPath(blockPoint, hitEndPoint, (1.0-stepFactor)*steps); // quickly hit puck towards target
+	hitPath   = computeLinearPath(blockPoint, hitEndPoint, (1.0-stepFactor)*steps, false); // quickly hit puck towards target
 
 	// this will catch if any of the composite paths are empty
 	if (blockPath.size() == 0)

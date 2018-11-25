@@ -45,7 +45,7 @@ class TivaController
 
 		// simple path methods
 		static std::tuple<Vec_double, int> findBlockPoint(std::vector<Vec_double> trajectory, double yblock);
-		std::vector<Vec_double> computeLinearPath(Vec_double start, Vec_double end, int steps);
+		std::vector<Vec_double> computeLinearPath(Vec_double start, Vec_double end, int steps, bool safety);
 		std::vector<Vec_double> computeCurvedPath(Vec_double start, Vec_double stop, int steps, double rFactor);
 		
 		// hitting path paths
