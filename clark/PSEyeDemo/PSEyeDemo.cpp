@@ -487,7 +487,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		int home_status = 0;				//0 = not at home
 
 		// gameplay constants 
-		double thresholdVelocity = 2.0;
+		double velocityThreshold = 2.0;
 
 		// set arm to home - make sure to manually move the arm home before starting the program!
 		Tiva.moveArm(home, false);
