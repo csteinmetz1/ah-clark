@@ -444,11 +444,11 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		//33.0 -10.0 (x offset , yoffset)
 		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 36, -22.6);   //modified 11/16/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
+		
 		//timing variables
 		clock_t start, end;
 
@@ -486,8 +486,9 @@ static DWORD WINAPI ArmThread(LPVOID)
 		home.y = 20;
 		int home_status = 0;				//0 = not at home
 
-		//puck disappears variable.  If the puck disappears at any point during frame sampling set disappear to 1
-		int disappear = 0;
+		// gameplay constants 
+		double thresholdVelocity = 2.0;
+
 		// set arm to home - make sure to manually move the arm home before starting the program!
 		Tiva.moveArm(home, false);
 
@@ -519,9 +520,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 					// Now let's hit a puck
 					std::vector<Vec_double> hitPath;
 
-					// Threshold to recompute path
-					double velocityThreshold = 1.0;
-
 					// Define target - the center of the goal
 					Vec_double targetPoint;
 					targetPoint.x = 33.0;
@@ -532,7 +530,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 					double ylim = 10.0;
 					double minSteps = 200;
 
-					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().y) < 0.25 && ((sendy < 10 && sendx < 10) || (sendy < 10 && sendx > 56)))
+					// corner cases
+					if (abs(puck.getVelocity().y) < 0.1 && abs(puck.getVelocity().x) < 0.1 && ((sendy < 10 && sendx < 18) || (sendy < 10 && sendx > 44)))
 					{
 						Vec_double curveStart, curveEnd;
 
@@ -563,9 +562,10 @@ static DWORD WINAPI ArmThread(LPVOID)
 						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
 						blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
 					}
-					else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().y) < 1.0 && sendy < 40)
+					// follow and hit 
+					else if (abs(puck.getVelocity().y) < 2.0 && abs(puck.getVelocity().x) < 2.0 && sendy < 40)
 					{
-						if (sendx > 0 && sendy > 0)
+						if (sendx > 0 && sendy > 0 && sendy > Tiva.getArm2Location().y)
 						{
 							// Eddie's method
 							Vec_double hitPoint, endPoint;
@@ -589,13 +589,14 @@ static DWORD WINAPI ArmThread(LPVOID)
 					else if (puck.getVelocity().y > 0 && sendy > 40)
 					{
 						blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), home, 300);
+						std::cout << "go home" << std::endl;
 					}
 					else
 					{
 						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
+						std::cout << "block and hit" << std::endl;
 					}
 
-					//christian is a door
 					if (blockPath.size() > 0 && 1) // check if the path contains points
 					{
 						// store starting velcoity to check against updated value
