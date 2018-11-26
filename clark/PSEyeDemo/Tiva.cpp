@@ -337,7 +337,7 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 
 	slope = (targetPoint.y - blockPoint.y)  / (targetPoint.x - blockPoint.x);
 
-	hitEndPoint.y = yblock;
+	hitEndPoint.y = 35.0;
 	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / slope ) + blockPoint.x;
 
 	// calculate number of steps
@@ -350,7 +350,7 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 		 throw std::invalid_argument("stepFactor must be between 0.0 and 1.0 - non-inclusive");
 	}
 
-	blockPath = computeLinearPath(arm2Pos, blockPoint, (stepFactor*steps));	 // compute path to puck
+	blockPath = computeLinearPath(arm2Pos, blockPoint, (stepFactor*steps), true);	 // compute path to puck
 	hitPath   = computeLinearPath(blockPoint, hitEndPoint, (1.0-stepFactor)*steps, false); // quickly hit puck towards target
 
 	// this will catch if any of the composite paths are empty

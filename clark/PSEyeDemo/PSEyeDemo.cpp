@@ -530,7 +530,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 					double yhit = 20.0;
 					double xlim = 10.0;
 					double ylim = 10.0;
-					double minSteps = 200;
 
 					double current_x = sendx;
 					double current_y = sendy;
@@ -569,7 +568,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
 					}
 					// follow and hit 
-					else if (abs(puck.getVelocity().y) < 2.0 && abs(puck.getVelocity().x) < 2.0 && sendy < 45 && 1)
+					else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().x) < 1.0 && sendy < 45)
 					{
 						if (sendx > 0 && sendy > 0 && sendy > Tiva.getArm2Location().y)
 						{
@@ -583,7 +582,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 							std::vector<Vec_double> initPath, hitPath;
 							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
-							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 200, true);
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true);
 
 							blockType = "follow+hit";
 
@@ -602,7 +601,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					}
 					else if (puck.getVelocity().y < 0)
 					{
-						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.5);
+						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
 						std::cout << "block and hit" << std::endl;
 						blockType = "block+hit";
 					}
@@ -618,7 +617,12 @@ static DWORD WINAPI ArmThread(LPVOID)
 						for (auto point : blockPath)
 						{
 							// check if current path is valid for latest velocity
-							if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold && (blockType == "block+hit" || blockType == "home") ) 
+							if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold && sendy > 20.0 && blockType == "block+hit" ) 
+							{
+								blockPath.clear();
+								break;
+							}
+							else if (abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold && blockType == "home")
 							{
 								blockPath.clear();
 								break;
