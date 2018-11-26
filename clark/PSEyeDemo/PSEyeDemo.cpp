@@ -93,7 +93,7 @@ double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
 
-bool essential_ops = false;
+bool essential_ops = true;
 
 //////////////////////////////////////////////////
 
@@ -541,7 +541,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					// corner cases
 					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)))
 					{
-						Vec_double curveStart, curveEnd;
+						Vec_double curveStart, curveEnd, hitEnd;
 
 						if (current_x < 18)
 						{
@@ -558,18 +558,24 @@ static DWORD WINAPI ArmThread(LPVOID)
 							curveEnd.y = 20;
 						}
 
-						vector<Vec_double> initPath, curvePath;
+						hitEnd.x = curveEnd.x;
+						hitEnd.y = 35.0;
+
+						vector<Vec_double> initPath, curvePath, hitPath;
 
 						initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), curveStart, 600, true);
 						curvePath = Tiva.computeCurvedPath(curveStart, curveEnd, 600, 4.0);
+						hitPath = Tiva.computeLinearPath(curveEnd, hitEnd, 300, true);
 
 						std::cout << "corner" << std::endl;
 						blockType = "corner";
 
 						// pack the two paths into a sigle vector
-						blockPath.reserve(initPath.size() + curvePath.size()); // preallocate memory
+						blockPath.reserve(initPath.size() + curvePath.size() + hitPath.size()); // preallocate memory
 						blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
 						blockPath.insert(blockPath.end(), curvePath.begin(), curvePath.end());
+						blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
+
 					}
 					// follow and hit 
 					else if (abs(puck.getVelocity().y) < 1.0 && abs(puck.getVelocity().x) < 1.0 && sendy < 45)
