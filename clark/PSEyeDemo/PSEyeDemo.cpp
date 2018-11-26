@@ -484,7 +484,11 @@ static DWORD WINAPI ArmThread(LPVOID)
 		// arm home position
 		Vec_double home;
 		home.x = 33;
-		home.y = 12.0;
+		home.y = 15.0;
+
+		// goal zone approx. lines
+		double leftLineSlope = (15.0 - 0.0) / (33.0 - 18.0);
+		double rightLineSlope = (15.0 - 0.0) / (33.0 - 48.0);
 
 		// gameplay constants 
 		double velocityThreshold = 1.0;
@@ -596,16 +600,20 @@ static DWORD WINAPI ArmThread(LPVOID)
 						{
 							Vec_double endPoint;
 
-							if (sendx >= 33.0)
+							if (sendx >= 48.0)
 							{
 								endPoint.x = sendx + 5;
 								endPoint.y = sendy;
 							}
 
-							else if (sendx < 33.0)
+							else if (sendx < 18.0)
 							{
 								endPoint.x = sendx - 5;
 								endPoint.y = sendy;
+							}
+							else
+							{
+								continue;
 							}
 
 							std::vector<Vec_double> hitPath;
@@ -613,7 +621,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 							blockType = "follow+hit";
 
-							std::cout << "follow and hit - side" << std::endl;
+							std::cout << "SIDE - follow and hit" << std::endl;
 						}
 					}
 					else if (puck.getVelocity().y > 0 && sendy > 40)
@@ -667,7 +675,20 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 								// check if the paddle will go into the goal zone
 
+								if (point.y < (leftLineSlope * (point.x - 33.0) + 15.0) && (point.x <= 33.0))
+								{
+									point.x = point.x; // don't change x value
+									point.y = leftLineSlope * (point.x - 33.0) + 15.0;
+									std::cout << "in goal zone" << std::endl;
+								}
+								else if (point.y < (rightLineSlope * (point.x - 33.0) + 15.0) && (point.x > 33.0))
+								{
+									point.x = point.x; // don't change x value
+									point.y = rightLineSlope * (point.x - 33.0) + 15.0;
+									std::cout << "in goal zone" << std::endl;
 
+								}
+								
 								Tiva.moveArm(point, false);
 								pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
 								pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
