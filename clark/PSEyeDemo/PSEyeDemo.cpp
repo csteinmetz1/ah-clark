@@ -75,7 +75,9 @@ int setup;					// Variable that tells us which state we are in
 double sendx;
 double sendy;
 
-int arm_comm = 0;
+int home_status = 0;				// 0 = not at home
+int penalty_status = 0;				// 0 = not at penalty
+
 int frame_number;
 int FPS;
 Vec_double hit_location;
@@ -178,6 +180,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		switch (KeyPress) {
 		case 113:
 			game_mode = "normal";
+			penalty_status = 0;
 			cout << "game mode is normal"<<endl;
 			break;
 		case 119:
@@ -186,6 +189,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			break;
 		case 101:
 			game_mode = "penalty offense";
+			penalty_status = 0;
 			cout << "game mode is penalty offense" << endl;
 			break;
 		case 27: //escape pressed
@@ -364,9 +368,6 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer) {
 			sendx = (posX) / 3.04762;
 			sendy = (posY) / 2.985;
 			//cout << sendx << "\t" << sendy << endl;
-			// tell the arm we are ready
-			if (arm_comm == 0)
-				arm_comm = 1;
 
 			//not essential
 			if (essential_ops)
@@ -444,7 +445,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 34.5, -22.6);   //modified 11/25/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 35.0, -22.6);   //modified 11/25/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -484,7 +485,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 		Vec_double home;
 		home.x = 33;
 		home.y = 12.0;
-		int home_status = 0;				//0 = not at home
 
 		// gameplay constants 
 		double velocityThreshold = 1.0;
@@ -535,7 +535,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					double current_y = sendy;
 
 					// corner cases
-					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && ((current_y < 15 && current_x < 18) || (current_y < 15 && current_x > 44)))
+					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)))
 					{
 						Vec_double curveStart, curveEnd;
 
@@ -592,6 +592,29 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 							std::cout << "follow and hit" << std::endl;
 						}
+						else if (sendx > 0 && sendy > 0 && sendy < Tiva.getArm2Location().y)
+						{
+							Vec_double endPoint;
+
+							if (sendx >= 33.0)
+							{
+								endPoint.x = sendx + 5;
+								endPoint.y = sendy;
+							}
+
+							else if (sendx < 33.0)
+							{
+								endPoint.x = sendx - 5;
+								endPoint.y = sendy;
+							}
+
+							std::vector<Vec_double> hitPath;
+							blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), endPoint, 0, true);
+
+							blockType = "follow+hit";
+
+							std::cout << "follow and hit - side" << std::endl;
+						}
 					}
 					else if (puck.getVelocity().y > 0 && sendy > 40)
 					{
@@ -642,6 +665,9 @@ static DWORD WINAPI ArmThread(LPVOID)
 								else if (point.y <= 3.5) { point.y = 3.5; }
 								else if (point.y >= 45.0) { point.y = 45.0; }
 
+								// check if the paddle will go into the goal zone
+
+
 								Tiva.moveArm(point, false);
 								pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
 								pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
@@ -656,15 +682,80 @@ static DWORD WINAPI ArmThread(LPVOID)
 			}
 			else if (game_mode == "penalty defense")
 			{
-			cout << "hello from penalty defense" << endl;
+				blockPath.clear();
+				cout << "hello from penalty defense" << endl;
+
+				Vec_double offField;
+				offField.x = 5;
+				offField.y = 5;
+
+				if (penalty_status == 0)
+				{
+					blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), offField, 1000, true);
+					home_status = 0;
+					penalty_status = 1;
+
+					for (auto point : blockPath)
+					{
+						receiver.GetData(&pkin);
+
+						// check if the paddle will collide with the wall
+						if (point.x >= 63.0) { point.x = 63.0; }
+						else if (point.x <= 5.0) { point.x = 5.0; }
+						else if (point.y <= 3.5) { point.y = 3.5; }
+						else if (point.y >= 45.0) { point.y = 45.0; }
+
+						Tiva.moveArm(point, false);
+						pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+						pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+						sender.SendData(&pkout);
+						Sleep(1);
+					}
+					while (penalty_status == 1) {};
+					blockPath.clear();
+				}
+
 			}
-			else if (game_mode == "penalty offense")
-			{
-			cout << "hello from penalty offense" << endl;
-			}
+			//else if (game_mode == "penalty offense")
+			//{
+			//	cout << "hello from penalty offense" << endl;
+			//	// Eddie's method
+			//	Vec_double hitPoint, endPoint;
+			//	hitPoint.x = sendx;
+			//	hitPoint.y = sendy - 10.0; // some point 'behind the puck'
+
+			//	endPoint.x = sendx;
+			//	endPoint.y = sendy + 5;
+
+			//	std::vector<Vec_double> initPath, hitPath;
+			//	initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
+			//	hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true);
+
+			//	blockPath.reserve(initPath.size() + hitPath.size()); // preallocate memory
+			//	blockPath.insert(blockPath.end(), initPath.begin(), initPath.end());
+			//	blockPath.insert(blockPath.end(), hitPath.begin(), hitPath.end());
+
+			//	for (auto point : blockPath)
+			//	{
+			//		receiver.GetData(&pkin);
+
+			//		// check if the paddle will collide with the wall
+			//		if (point.x >= 63.0) { point.x = 63.0; }
+			//		else if (point.x <= 5.0) { point.x = 5.0; }
+			//		else if (point.y <= 3.5) { point.y = 3.5; }
+			//		else if (point.y >= 45.0) { point.y = 45.0; }
+
+			//		Tiva.moveArm(point, false);
+			//		pkout.flt1 = (float)Tiva.getMotor1AngleDegrees();
+			//		pkout.flt2 = (float)Tiva.getMotor2AngleDegrees();
+			//		sender.SendData(&pkout);
+			//		Sleep(1);
+			//	}
+			//}
 		}
 	}
 }
+
 static DWORD WINAPI TrajectoryThread(LPVOID)
 {
 	Sleep(1000);

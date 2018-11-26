@@ -100,7 +100,7 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 
 	if (steps == 0)
 	{
-		steps = int(15.0 * (floor(distance) + 1));
+		steps = int(12.4 * (floor(distance) + 1));
 	}
 
 	distancePerStep = distance / double(steps);
