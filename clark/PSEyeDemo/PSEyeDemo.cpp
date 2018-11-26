@@ -445,7 +445,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 35.0, -22.6);   //modified 11/25/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 35.5, -22.6);   //modified 11/25/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;

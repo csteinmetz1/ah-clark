@@ -341,9 +341,9 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / slope ) + blockPoint.x;
 
 	// calculate number of steps
-	double offsetTime = 100; // time to arrive early in ms
+	double offsetTime = 150.0; // time to arrive early in ms
 	double arrivalTime = blockFrame * sampleTime * 1000.0; 	// est. time in milliseconds
-	int steps = int((arrivalTime) / 2.0);						// est. number of steps (we assume each step takes ~2ms)
+	int steps = int((arrivalTime - offsetTime) / 2.0);						// est. number of steps (we assume each step takes ~2ms)
 
 	// check stepFactor if in valid range
 	if (stepFactor <= 0 || stepFactor >= 1.0)
