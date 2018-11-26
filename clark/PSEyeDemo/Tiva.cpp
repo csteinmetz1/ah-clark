@@ -106,7 +106,7 @@ std::vector<Vec_double> TivaController::computeLinearPath(Vec_double start, Vec_
 	distancePerStep = distance / double(steps);
 
 	// NOTE: maxDistancePerStep is a parameter we need to determine by some testing with set PID values
-	double maxDistancePerStep = 0.20;
+	double maxDistancePerStep = 0.20; // this was .20 but we need to try it lower
 
 	std::cout << "distance per step: " << distancePerStep << std::endl;
 	//std::cout << "steps: " << steps << std::endl;
@@ -341,14 +341,20 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / slope ) + blockPoint.x;
 
 	// calculate number of steps
-	double offsetTime = 150.0; // time to arrive early in ms
+	double offsetTime = 0.0;								// time to arrive early in ms
 	double arrivalTime = blockFrame * sampleTime * 1000.0; 	// est. time in milliseconds
-	int steps = int((arrivalTime - offsetTime) / 2.0);						// est. number of steps (we assume each step takes ~2ms)
+	int steps = int((arrivalTime - offsetTime) / 2.0);		// est. number of steps (we assume each step takes ~2ms)
 
 	// check stepFactor if in valid range
 	if (stepFactor <= 0 || stepFactor >= 1.0)
 	{
 		 throw std::invalid_argument("stepFactor must be between 0.0 and 1.0 - non-inclusive");
+	}
+
+	// if negative steps are calculated return an empty path
+	if (steps <= 0)
+	{
+		return fullPath;
 	}
 
 	blockPath = computeLinearPath(arm2Pos, blockPoint, (stepFactor*steps), true);	 // compute path to puck

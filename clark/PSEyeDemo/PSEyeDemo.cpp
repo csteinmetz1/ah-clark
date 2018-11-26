@@ -54,7 +54,7 @@ void inst_taskbars(void);
 //////////////////////////////////////////////////
 int iLowH = 42;				// Hue
 int iHighH = 92;
-int iLowS = 40;				// Saturation
+int iLowS = 60;				// Saturation
 int iHighS = 255;
 int iLowV = 0;				// Value
 int iHighV = 255;
@@ -93,7 +93,7 @@ double heightCm = 134.0;	// rink height in cm
 
 Puck puck(radius, 1.0, widthCm, heightCm);
 
-bool essential_ops = true;
+bool essential_ops = false;
 
 //////////////////////////////////////////////////
 
@@ -374,7 +374,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer) {
 			{
 				vector<Vec_double>  trajectory = puck.getTrajectory();
 				vector<Vec_double> path = blockPath;
-				if (trajectory.size() > 0 && 1)
+				if (trajectory.size() > 0 && 0)
 				{
 					for (auto point : trajectory)
 					{
@@ -445,7 +445,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 35.5, -22.6);   //modified 11/25/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 34.0, -21.5);   //modified 11/25/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -552,8 +552,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 						}
 						else if (current_x > 44)
 						{
-							curveStart.x = 46;
-							curveStart.y = 3.5;
+							curveStart.x = 44;
+							curveStart.y = 0.0;
 							curveEnd.x = 61;
 							curveEnd.y = 20;
 						}
@@ -579,10 +579,10 @@ static DWORD WINAPI ArmThread(LPVOID)
 							// Eddie's method
 							Vec_double hitPoint, endPoint;
 							hitPoint.x = sendx;
-							hitPoint.y = sendy - 10.0; // some point 'behind the puck'
+							hitPoint.y = sendy - 5.0; // some point 'behind the puck'
 
 							endPoint.x = sendx;
-							endPoint.y = sendy + 5;
+							endPoint.y = sendy + 5.0;
 
 							std::vector<Vec_double> initPath, hitPath;
 							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
@@ -598,7 +598,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						}
 						else if (sendx > 0 && sendy > 0 && sendy < Tiva.getArm2Location().y)
 						{
-							Vec_double endPoint;
+							Vec_double endPoint, startPoint;
 
 							if (sendx >= 48.0)
 							{
@@ -606,7 +606,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 								endPoint.y = sendy;
 							}
 
-							else if (sendx < 18.0)
+							else if (sendx <= 18.0)
 							{
 								endPoint.x = sendx - 5;
 								endPoint.y = sendy;
@@ -616,7 +616,6 @@ static DWORD WINAPI ArmThread(LPVOID)
 								continue;
 							}
 
-							std::vector<Vec_double> hitPath;
 							blockPath = Tiva.computeLinearPath(Tiva.getArm2Location(), endPoint, 0, true);
 
 							blockType = "follow+hit";
@@ -658,7 +657,12 @@ static DWORD WINAPI ArmThread(LPVOID)
 								blockPath.clear();
 								break;
 							}
-							else if (sendy > 45 && (blockType == "corner" || blockType == "follow+hit"))
+							else if ((abs(start_vel.x - puck.getVelocity().x) + abs(start_vel.y - puck.getVelocity().y) > velocityThreshold || sendy > 45) && blockType == "follow+hit")
+							{
+								blockPath.clear();
+								break;
+							}
+							else if (sendy > 45 && blockType == "corner")
 							{
 								blockPath.clear();
 								break;
@@ -670,7 +674,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 								// check if the paddle will collide with the wall
 								if (point.x >= 63.0) { point.x = 63.0; }
 								else if (point.x <= 5.0) { point.x = 5.0; }
-								else if (point.y <= 3.5) { point.y = 3.5; }
+								else if (point.y <= 0.0) { point.y = 0.0; }
 								else if (point.y >= 45.0) { point.y = 45.0; }
 
 								// check if the paddle will go into the goal zone
@@ -721,8 +725,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 						receiver.GetData(&pkin);
 
 						// check if the paddle will collide with the wall
-						if (point.x >= 63.0) { point.x = 63.0; }
-						else if (point.x <= 5.0) { point.x = 5.0; }
+						if (point.x >= 61.0) { point.x = 61.0; }
+						else if (point.x <= 6.0) { point.x = 6.0; }
 						else if (point.y <= 3.5) { point.y = 3.5; }
 						else if (point.y >= 45.0) { point.y = 45.0; }
 
