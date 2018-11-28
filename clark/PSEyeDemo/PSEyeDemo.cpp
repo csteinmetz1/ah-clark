@@ -374,7 +374,7 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer) {
 			{
 				vector<Vec_double>  trajectory = puck.getTrajectory();
 				vector<Vec_double> path = blockPath;
-				if (trajectory.size() > 0 && 0)
+				if (trajectory.size() > 0 && 1)
 				{
 					for (auto point : trajectory)
 					{
@@ -397,11 +397,12 @@ static DWORD WINAPI CaptureThread(LPVOID ThreadPointer) {
 
 				circle(warped_display, Point(hit_location.x*3.04762, hit_location.y*2.985), 2, Scalar(0, 255, 0), 2, 8, 0);
 
-				//flip(warped_display, flipped_display, 0);
+				flip(warped_display, flipped_display, 0);
 				//flip(flipped_display, warped_display, 1);
+				flip(final_thresh, *(Instance->binary_display),0);
 
-				*(Instance->warped_display) = warped_display;
-				*(Instance->binary_display) = final_thresh;
+				*(Instance->warped_display) = flipped_display;
+				//*(Instance->binary_display) = final_thresh;
 			}
 			setup = 2; // what does this do?
 		}
@@ -491,7 +492,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		double rightLineSlope = (15.0 - 0.0) / (33.0 - 48.0);
 
 		// gameplay constants 
-		double velocityThreshold = 1.0;
+		double velocityThreshold = 0.5; //was 1.0
 
 		// set arm to home - make sure to manually move the arm home before starting the program!
 		Tiva.moveArm(home, false);
@@ -592,7 +593,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 							std::vector<Vec_double> initPath, hitPath;
 							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
-							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true);
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true); //was 100
 
 							blockType = "follow+hit";
 
