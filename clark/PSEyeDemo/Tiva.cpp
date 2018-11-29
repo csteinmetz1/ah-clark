@@ -335,10 +335,6 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	double slope; 			  // slope of the line connecting puck hit point and puck target point
 	Vec_double hitEndPoint;   // end point of the hit path which is past the puck on the line towards the target
 
-
-	// point on the the trajectory before the hit point
-	if ()
-
 	// determine targetPoint to based on hit point to bank off wall
 	if (trajectory.end()[-2].x < blockPoint.x)
 	{

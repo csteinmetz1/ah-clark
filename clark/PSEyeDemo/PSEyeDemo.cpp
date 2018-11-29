@@ -636,7 +636,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 						std::cout << "go home" << std::endl;
 						blockType = "home";
 					}
-					else if (puck.getVelocity().y < 0)
+					else if (puck.getVelocity().y < 0) // may want to add an upper limit of -1.0?
 					{
 						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
 						std::cout << "block and hit" << std::endl;
@@ -669,7 +669,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 								blockPath.clear();
 								break;
 							}
-							else if (sendy > 45 && blockType == "corner")
+							else if ( ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)) && blockType == "corner") // stop corner case if puck leaves the corner
 							{
 								blockPath.clear();
 								break;
