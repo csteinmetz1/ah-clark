@@ -137,13 +137,13 @@ void Puck::computeTrajectory()
 		if (current_pos.x - radius < 0.0)
 		{
 			current_pos.x = 0.0 + radius;
-			current_vel.x = -1.0 * current_vel.x;
+			current_vel.x = -0.75 * current_vel.x;
 		}
 		// left wall
 		else if (current_pos.x + radius > rinkWidth)
 		{
 			current_pos.x = rinkWidth - radius;
-			current_vel.x = -1.0 * current_vel.x;
+			current_vel.x = -0.75 * current_vel.x;
 		}
 
 		traj.push_back(current_pos);
