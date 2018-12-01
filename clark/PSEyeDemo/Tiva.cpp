@@ -336,28 +336,37 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	double trajectorySlope; // slope of the incoming trajectory line
 	Vec_double hitEndPoint; // end point of the hit path which is past the puck on the line towards the target
 
+	if (trajectory.size() < 3)
+	{
+		return fullPath; // exit with empty path if trajectory vector is very small
+	}
+
 	trajectorySlope = (trajectory.end()[-2].y - blockPoint.y)  / (trajectory.end()[-2].x - blockPoint.x);
 
 	// determine targetPoint to based on hit point to bank off wall
-	if (abs(trajectorySlope) > 5.0)
+	if (abs(trajectorySlope) > 1.5)
 	{
 		targetPoint.x = 33.0;
 		targetPoint.y = 136.0;
 	}
 	else if (trajectory.end()[-2].x < blockPoint.x)
 	{
-		targetPoint.x = 0.0;
-		targetPoint.y = 75.0;
+		targetPoint.x = 33.0;
+		targetPoint.y = 136.0;
+		//targetPoint.x = 10.0;
+		//targetPoint.y = trajectorySlope * (targetPoint.x - blockPoint.x) + blockPoint.y;
 	}
 	else
 	{
-		targetPoint.x = 66.0;
-		targetPoint.y = 75.0;
+		targetPoint.x = 33.0;
+		targetPoint.y = 136.0;
+		//targetPoint.x = 66.0;
+		//targetPoint.y = trajectorySlope * (targetPoint.x - blockPoint.x) + blockPoint.y;
 	}
 
 	hittingSlope = (targetPoint.y - blockPoint.y)  / (targetPoint.x - blockPoint.x);
 
-	hitEndPoint.y = 35.0;
+	hitEndPoint.y = 30.0;
 	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / hittingSlope ) + blockPoint.x;
 
 	// calculate number of steps

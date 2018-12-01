@@ -446,7 +446,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 		exit(0);
 	}
 	else {
-		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 34.0, -21.5);   //modified 11/25/2018
+		TivaController Tiva = TivaController(1.0, 46.75, 24.25, 37.0, -21.5);   //modified 11/25/2018
 		Vec_double corner_cases;
 		vector<Vec_double> left_corner;
 		vector<Vec_double> right_corner;
@@ -590,11 +590,11 @@ static DWORD WINAPI ArmThread(LPVOID)
 							hitPoint.y = sendy - 5.0; // some point 'behind the puck'
 
 							endPoint.x = sendx;
-							endPoint.y = sendy + 5.0;
+							endPoint.y = sendy + 7.5;
 
 							std::vector<Vec_double> initPath, hitPath;
 							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
-							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true); // was 100
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 50, true); // was 100
 
 							blockType = "follow+hit";
 
@@ -639,7 +639,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 					}
 					else if (puck.getVelocity().y < 0) // may want to add an upper limit of -1.0?
 					{
-						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8);
+						blockPath = Tiva.computeBlockAndHitPath(puck.getTrajectory(), targetPoint, puck.getSampleTime(), 20.0, 0.8); //turn 15 to 20 to revert changes
 						std::cout << "block and hit" << std::endl;
 						blockType = "block+hit";
 					}
@@ -792,7 +792,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 static DWORD WINAPI TrajectoryThread(LPVOID)
 {
 	Sleep(1000);
-	int sample_size = 4;			// number of frames to use
+	int sample_size = 4;			// number of frames to use.........was 4
 	Vec_double point;				// placeholder for puck location
 	vector<Vec_double> puck_points; // vector of sampled puck locations
 
