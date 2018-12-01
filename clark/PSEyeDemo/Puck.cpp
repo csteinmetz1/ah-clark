@@ -58,7 +58,7 @@ void Puck::move()
 void Puck::checkBoundary()
 {
 	// right wall
-	if (pos.x + radius < 0.0)
+	if (pos.x - radius < 0.0)
 	{
 		pos.x = 0.0 + radius;
 		vel.x = -1.0 * vel.x;
@@ -134,7 +134,7 @@ void Puck::computeTrajectory()
 		current_pos.y += current_vel.y;
 
 		// right wall
-		if (current_pos.x + radius < 0.0)
+		if (current_pos.x - radius < 0.0)
 		{
 			current_pos.x = 0.0 + radius;
 			current_vel.x = -1.0 * current_vel.x;
