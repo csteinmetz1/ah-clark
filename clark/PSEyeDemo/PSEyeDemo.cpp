@@ -540,7 +540,8 @@ static DWORD WINAPI ArmThread(LPVOID)
 					double current_y = sendy;
 
 					// corner cases
-					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)))
+					if (abs(puck.getVelocity().y) < 0.25 && abs(puck.getVelocity().x) < 0.25 && current_y > 0 && current_x > 0 
+						&& ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)))
 					{
 						Vec_double curveStart, curveEnd, hitEnd;
 
@@ -593,7 +594,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 
 							std::vector<Vec_double> initPath, hitPath;
 							initPath = Tiva.computeLinearPath(Tiva.getArm2Location(), hitPoint, 0, true);
-							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true); //was 100
+							hitPath = Tiva.computeLinearPath(hitPoint, endPoint, 100, true); // was 100
 
 							blockType = "follow+hit";
 
@@ -669,7 +670,7 @@ static DWORD WINAPI ArmThread(LPVOID)
 								blockPath.clear();
 								break;
 							}
-							else if ( ((current_y < 20 && current_x < 18) || (current_y < 20 && current_x > 44)) && blockType == "corner") // stop corner case if puck leaves the corner
+							else if (sendy > 45 && blockType == "corner") // stop corner case if puck leaves the zone
 							{
 								blockPath.clear();
 								break;

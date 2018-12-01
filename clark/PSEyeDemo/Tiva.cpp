@@ -332,11 +332,19 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 	}
 
 	// compute hitting details
-	double slope; 			  // slope of the line connecting puck hit point and puck target point
-	Vec_double hitEndPoint;   // end point of the hit path which is past the puck on the line towards the target
+	double hittingSlope; 	// slope of the line connecting puck hit point and puck target point
+	double trajectorySlope; // slope of the incoming trajectory line
+	Vec_double hitEndPoint; // end point of the hit path which is past the puck on the line towards the target
+
+	trajectorySlope = (trajectory.end()[-2].y - blockPoint.y)  / (trajectory.end()[-2].x - blockPoint.x);
 
 	// determine targetPoint to based on hit point to bank off wall
-	if (trajectory.end()[-2].x < blockPoint.x)
+	if (abs(trajectorySlope) > 5.0)
+	{
+		targetPoint.x = 33.0;
+		targetPoint.y = 136.0;
+	}
+	else if (trajectory.end()[-2].x < blockPoint.x)
 	{
 		targetPoint.x = 0.0;
 		targetPoint.y = 75.0;
@@ -347,10 +355,10 @@ std::vector<Vec_double> TivaController::computeBlockAndHitPath(std::vector<Vec_d
 		targetPoint.y = 75.0;
 	}
 
-	slope = (targetPoint.y - blockPoint.y)  / (targetPoint.x - blockPoint.x);
+	hittingSlope = (targetPoint.y - blockPoint.y)  / (targetPoint.x - blockPoint.x);
 
 	hitEndPoint.y = 35.0;
-	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / slope ) + blockPoint.x;
+	hitEndPoint.x = ( (hitEndPoint.y - blockPoint.y) / hittingSlope ) + blockPoint.x;
 
 	// calculate number of steps
 	double offsetTime = 0.0;								// time to arrive early in ms
